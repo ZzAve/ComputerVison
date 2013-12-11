@@ -213,3 +213,9 @@ pip-log.txt
 
 #Mr Developer
 .mr.developer.cfg
+
+# Visual studio
+.externalToolBuilders/
+Debug/
+x64/
+.sdf
