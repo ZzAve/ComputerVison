@@ -219,3 +219,7 @@ pip-log.txt
 Debug/
 x64/
 .sdf
+
+
+#SVN repo shizzle
+.svn/
