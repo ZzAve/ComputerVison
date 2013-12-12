@@ -18,6 +18,13 @@ const int nrHorizontalCorners = 8;
 const int nrVerticalCorners = 6;
 const Size board_size = Size(nrHorizontalCorners,nrVerticalCorners);
 int imgCount =0;
+String videoPath;
+String camNr = "3";
+String camPath = "../data/cam";
+String imgName = "calibrationImg";
+String imgExt = ".jpg";
+int startNr= 0;
+int endNr = 85;
 
 /*
 *Class Line, is an extension of the already existing class line. Upon creation, the img 
@@ -230,8 +237,9 @@ int cameraCalibration(VideoCapture stream, vector<Point3f> phys_corners, Mat& in
 	// Keep capturing images as long as the number of images needed for calibration is not reached
 	while(!image.empty())
     {	
+		Mat proc_img = image.clone();
 		  cvtColor(image, gray_image, CV_BGR2GRAY);
-		  bool found = findChessboardCorners(gray_image, board_size, corners, 
+		  bool found = findChessboardCorners(proc_img, board_size, corners, 
 								CV_CALIB_CB_ADAPTIVE_THRESH | CV_CALIB_CB_FAST_CHECK | CV_CALIB_CB_NORMALIZE_IMAGE);
 		  
 		  //cout<< "Processingimage!"<<endl;
@@ -240,13 +248,13 @@ int cameraCalibration(VideoCapture stream, vector<Point3f> phys_corners, Mat& in
 		  {
 			  cornerSubPix(gray_image, corners, Size(11, 11), Size(-1, -1),
 					 TermCriteria(CV_TERMCRIT_EPS + CV_TERMCRIT_ITER, 30, 0.1));
-			  drawChessboardCorners(image, board_size, corners, found);
-			  imshow("win1",image);	
+			  drawChessboardCorners(proc_img, board_size, corners, found);
+			  imshow("win1",proc_img);	
 			  
 			  // Check whether the found corners correspond to an comparable finding on 
 			  // on of the other calibration images
 			  double error,errorA,errorB,errorC;
-			  double threshold = 1000; // if the accumulated difference  of all corners
+			  double threshold = 600; // if the accumulated difference  of all corners
 			  int countGood=0;
 			  if (successes==0)
 			  {
@@ -277,7 +285,7 @@ int cameraCalibration(VideoCapture stream, vector<Point3f> phys_corners, Mat& in
 
 						  if (error >= threshold)
 						  {
-							  cout<< "Entry \""<< entry<< "\" is fine! Error= "<<error<<" ("<<cornerId<<")";
+							  //cout<< "Entry \""<< entry<< "\" is fine! Error= "<<error<<" ("<<cornerId<<")";
 							  countGood++;
 							  cornerId = nrVerticalCorners*nrHorizontalCorners;
 						  }
@@ -286,29 +294,36 @@ int cameraCalibration(VideoCapture stream, vector<Point3f> phys_corners, Mat& in
 					  {
 						  cout<<" The image did not make it!"<<endl;
 						  break;
-						  			  }
+					  }
 				  }
 			  }
 
 			  //A chessboard is found on the image, ask the user whether to keep it or not
-			  //cout<<"Use image for calibration? ";
-			  //int key = waitKey(100);
+			  
 			  //cout<<key<<endl;
 			  if (countGood == image_corners.size())
 			  {
-				  //cout<<" YES please!"<<endl;
-				  cout<< countGood<< "=="<<image_corners.size()<<endl;
-		          successes++;
-				  image_corners.push_back(corners);
-				  physical_corners.push_back(phys_corners);
-				  cout<<"Snap stored! Successes: "<<successes<<endl;
-				  stream >> image; stream >> image;stream >> image;stream >> image;
+				  cout<<"Use image for calibration? ";
+			      int key = waitKey();
+				  if (key==32){
+					  String imgName  = "calibrationImg";
+					  imgName += to_string(imgCount++);
+					  imgName += ".jpg";
+					  imwrite(camPath+camNr+"/"+imgName,image);
+					
+					  cout<< countGood<< "=="<<image_corners.size()<<endl;
+					  successes++;
+					  image_corners.push_back(corners);
+					  physical_corners.push_back(phys_corners);
+					  cout<<"Snap stored! Successes: "<<successes<<endl;
+					  stream >> image; stream >> image;stream >> image;stream >> image;
+				  }
 				}
 			 
 
 			  cout<< "======================="<<endl;
 		  } else {
-			//imshow("win1", image);
+			imshow("win1", image);
 		  }
 		  
  
@@ -325,6 +340,92 @@ int cameraCalibration(VideoCapture stream, vector<Point3f> phys_corners, Mat& in
 	cout<< "Video is done, let's calibrate!"<<endl;
 	destroyWindow("win1");
 	 // Matrix intrinsic -> K 
+	 float intdata[] = {755.435, 0, 464.8648, 0, 566.50, 385.21,0, 0, 1};
+	 intrinsic = Mat(3, 3, CV_32FC1,intdata).clone(); //initialisation
+	 //intrinsic = Mat(3, 3, CV_32FC1); //initialisation
+	 intrinsic.ptr<float>(0)[0] = 1;
+     intrinsic.ptr<float>(1)[1] = 1;
+
+	 
+
+	 // Matrix extrinsic -> rotation and translation vector
+     vector<Mat> rvecs; // -> R
+     vector<Mat> tvecs; // -> t
+
+	 try{
+			//Now, execute the calibration. This will go in three steps: 1. compute intrinsic values. 2. estimate
+			// camera pose. and 3. run an Levenberg-Marquardt algorithm to optimise the reprojection error.
+		 calibrateCamera(physical_corners,image_corners, imgSize, intrinsic, distCoeffs, rvecs, tvecs);
+			cout<<"Calibrated intrinsic: "<<endl<<intrinsic<<endl;
+			cout << "Distortion matrix: " << endl << distCoeffs <<endl;
+			return 1;
+	 }catch(int exc){
+			cout<<"Caught the exception with number"<<exc<<endl;
+	 }
+     return 0;
+}
+
+int cameraCalibration(vector<Point3f> phys_corners, Mat& intrinsic, Mat& distCoeffs)
+{
+	/* 2 Matrices of the physical positions of the corners
+	   and the positions in the image.
+	   physical_corners -> 3D
+	   image_corners -> 2D
+	*/
+	vector<vector<Point3f>> physical_corners;
+	vector<vector<Point2f>> image_corners;
+	vector<Point2f> corners;
+    int ok=0;
+	Mat image,gray_image;
+	int successes = 0;
+	Size board_size = Size(nrHorizontalCorners,nrVerticalCorners);
+	Size imgSize;
+
+	for (int i=startNr;i<=endNr;i++)
+	{
+		// feed image
+		String file = camPath+camNr+"/intrinsics"+imgName+to_string(i)+imgExt;
+		image = imread(file);
+
+		// process
+		 Mat proc_img = image;
+		  cvtColor(image, gray_image, CV_BGR2GRAY);
+		  bool found = findChessboardCorners(proc_img, board_size, corners, 
+								CV_CALIB_CB_ADAPTIVE_THRESH | CV_CALIB_CB_FAST_CHECK | CV_CALIB_CB_NORMALIZE_IMAGE);
+		  
+		  //cout<< "Processingimage!"<<endl;
+		  // only proccess an image if there are chessboardcorners
+		  
+		  if(found)
+		  {
+			  cornerSubPix(gray_image, corners, Size(11, 11), Size(-1, -1),
+					 TermCriteria(CV_TERMCRIT_EPS + CV_TERMCRIT_ITER, 30, 0.1));
+			  drawChessboardCorners(proc_img, board_size, corners, found);
+			  imshow("win1",proc_img);	
+			  
+			  image_corners.push_back(corners);
+			  physical_corners.push_back(phys_corners);
+			  successes++;
+		      cout<<"Snap stored! Successes: "<<successes<<"/"<<endNr<<endl;
+			  successes++;
+		  } else {
+			imshow("win1", image);
+		  }
+		  
+ 
+          int key = waitKey(1);
+		  if(key==27) return 0;
+      
+	}
+
+	 /*At this point, there are enough images to do the actual calibration.
+	 * For this the intrinsic matrix K is initialised, and the output variables
+	 * (rvecs, rotation matrices and tvecs, translation matrices) are created
+	 */
+
+	 cout<< "Video is done, let's calibrate!"<<endl;
+	 destroyWindow("win1");
+	 // Matrix intrinsic -> K 
 	 intrinsic = Mat(3, 3, CV_32FC1); //initialisation
 	 intrinsic.ptr<float>(0)[0] = 1;
      intrinsic.ptr<float>(1)[1] = 1;
@@ -338,6 +439,7 @@ int cameraCalibration(VideoCapture stream, vector<Point3f> phys_corners, Mat& in
 			// camera pose. and 3. run an Levenberg-Marquardt algorithm to optimise the reprojection error.
 		 calibrateCamera(physical_corners,image_corners, imgSize, intrinsic, distCoeffs, rvecs, tvecs);
 			cout<<"Calibrated intrinsic: "<<endl<<intrinsic<<endl;
+			cout << "Distortion matrix: " << endl << distCoeffs <<endl;
 			return 1;
 	 }catch(int exc){
 			cout<<"Caught the exception with number"<<exc<<endl;
@@ -409,8 +511,11 @@ int main()
 	* and then the program is continued.
 	**/
 	/* Video capture is the feed/stream of images from the camera */
-	String videoPath = "cam1/video.avi";
-	VideoCapture capture = VideoCapture(videoPath);
+
+
+	videoPath = "video.avi";
+	cout<< camPath+camNr+"/"+videoPath <<endl;
+	VideoCapture capture = VideoCapture(camPath+camNr+"/"+videoPath);
 	capture.open(0);
 	
 	Mat image;
@@ -442,9 +547,11 @@ int main()
 	intrinz = fopen("intrinsics.txt","w");
 	for (int i=0; i<intrinsic.size().height;i++){
 		for (int j=0; j<intrinsic.size().width;j++){
-			fprintf(intrinz,"%f",&intrinsic.at<double>(i,j));
+			fprintf(intrinz,"%f \t",&intrinsic.at<double>(i,j));
 		}
+		fprintf(intrinz,"\n");
 	}
+	fclose(intrinz);
 
 	/*Now, for every next iteration use the next frame to find the chessboard, and draw a square on it*/
 	capture= VideoCapture(videoPath);
