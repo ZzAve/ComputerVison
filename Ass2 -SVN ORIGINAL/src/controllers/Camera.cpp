@@ -13,7 +13,7 @@ using namespace cv;
 namespace nl_uu_science_gmt
 {
 
-vector<Point>* Camera::_BoardCorners;  // marked checkerboard corners
+ vector<Point>* Camera::_BoardCorners;  // marked checkerboard corners
 
 Camera::Camera(const string &dp, const string &cp, const int id) :
 		_data_path(dp), _cam_prop(cp), _id(id)
@@ -52,7 +52,11 @@ bool Camera::initialize()
 	{
 		VideoCapture video = VideoCapture(_data_path + General::BackgroundVideoFile);
 		assert(video.isOpened());
-		video >> bg_image;
+
+		Mat tmp;
+		video >> tmp;
+		tmp.copyTo(bg_image);
+
 		if (bg_image.empty())
 		{
 			cout << "Unable to read: " << _data_path + General::BackgroundVideoFile;
@@ -311,6 +315,7 @@ bool Camera::detExtrinsics(const string &data_path, const string &checker_vid_fn
 				stringstream corner_id;
 				corner_id << "Corner_" << b;
 				fs << corner_id.str() << _BoardCorners->at(b);
+				cout<<"I fucked Britney Spears"<<endl;
 			}
 			fs.release();
 		}
@@ -329,32 +334,42 @@ bool Camera::detExtrinsics(const string &data_path, const string &checker_vid_fn
 		object_points.push_back(Point3f(x, y, z));
 		image_points.push_back(_BoardCorners->at(s));
 	}
-
+	cout<<"Here1"<<endl;
 	delete _BoardCorners;
-
+	
 	Mat rotation_values_d, translation_values_d;
 	solvePnP(object_points, image_points, camera_matrix, distortion_coeffs, rotation_values_d, translation_values_d);
-
+	cout<<"Here2"<<endl;
 	Mat rotation_values, translation_values;
 	rotation_values_d.convertTo(rotation_values, CV_32F);
 	translation_values_d.convertTo(translation_values, CV_32F);
-
+	cout<<"Translation values: "<<translation_values_d.size()<<endl;
+	cout<<"Translation values: "<<translation_values.size()<<endl;
+	cout<<"Rotation values d: "<<rotation_values_d<<endl;
+	cout<<"Rotation values : "<<rotation_values<<endl;
+	cout<<"Intrinsic : "<<camera_matrix<<endl;
+	cout<<"distorsion_coeffs : "<<distortion_coeffs;
+	cout<<"Here3"<<endl;
 	//draw the origin
 	Mat canvas = frame.clone();
-
+	cout<<"Here3"<<endl;
 	const int x_len = side_len * (board_size.height - 1);
 	const int y_len = side_len * (board_size.width - 1);
 	const int z_len = side_len * 3;
+	cout<<"Here31"<<endl;
 	Point o = projectOnView(Point3f(0, 0, 0), rotation_values, translation_values, camera_matrix, distortion_coeffs);
+	cout<<"Here32"<<endl;
 	Point x = projectOnView(Point3f(x_len, 0, 0), rotation_values, translation_values, camera_matrix, distortion_coeffs);
+	cout<<"Here33"<<endl;
 	Point y = projectOnView(Point3f(0, y_len, 0), rotation_values, translation_values, camera_matrix, distortion_coeffs);
+	cout<<"Here34"<<endl;
 	Point z = projectOnView(Point3f(0, 0, z_len), rotation_values, translation_values, camera_matrix, distortion_coeffs);
-
+	cout<<"Here4"<<endl;
 	line(canvas, o, x, Color_BLUE, 2, CV_AA);
 	line(canvas, o, y, Color_GREEN, 2, CV_AA);
 	line(canvas, o, z, Color_RED, 2, CV_AA);
 	circle(canvas, o, 3, Color_YELLOW, -1, CV_AA);
-
+	cout<<"Here5"<<endl;
 	fs.open(data_path + out_fname, FileStorage::WRITE);
 	if (fs.isOpened())
 	{
@@ -369,11 +384,11 @@ bool Camera::detExtrinsics(const string &data_path, const string &checker_vid_fn
 		cerr << "Unable to write camera intrinsics+extrinsics to: " << data_path << out_fname << endl;
 		return false;
 	}
-
+	cout<<"Here6"<<endl;
 	namedWindow("Origin", CV_WINDOW_KEEPRATIO);
 	imshow("Origin", canvas);
 	waitKey(500);
-
+	cout<<"Here7"<<endl;
 	return true;
 }
 
