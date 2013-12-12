@@ -1,6 +1,6 @@
 <?xml version="1.0"?>
 <opencv_storage>
-<CheckerBoardWidth>8</CheckerBoardWidth>
-<CheckerBoardHeight>6</CheckerBoardHeight>
+<CheckerBoardWidth>6</CheckerBoardWidth>
+<CheckerBoardHeight>8</CheckerBoardHeight>
 <CheckerBoardSquareSize>115</CheckerBoardSquareSize>
 </opencv_storage>

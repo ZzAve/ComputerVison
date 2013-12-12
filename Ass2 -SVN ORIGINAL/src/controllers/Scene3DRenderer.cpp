@@ -54,17 +54,26 @@ Scene3DRenderer::Scene3DRenderer(Reconstructor &r, const vector<Camera*> &cs) :
 	const int H = 0;
 	const int S = 15;
 	const int V = 25;
+	const int E = 0;
+	const int D = 0;
+	const int E2 = 0;
 	_h_threshold = H;
 	_ph_threshold = H;
 	_s_threshold = S;
 	_ps_threshold = S;
 	_v_threshold = V;
 	_pv_threshold = V;
+	_e_iterations = E;
+	_d_iterations = D;
+	_e2_iterations = E2;
 
 	createTrackbar("Frame", VIDEO_WINDOW, &_current_frame, _number_of_frames - 2);
 	createTrackbar("H", VIDEO_WINDOW, &_h_threshold, 255);
 	createTrackbar("S", VIDEO_WINDOW, &_s_threshold, 255);
 	createTrackbar("V", VIDEO_WINDOW, &_v_threshold, 255);
+	createTrackbar("Erosion1", VIDEO_WINDOW, &_e_iterations, 20);
+	createTrackbar("Dilation1", VIDEO_WINDOW, &_d_iterations, 20);
+	createTrackbar("Erosion2", VIDEO_WINDOW, &_e2_iterations, 20);
 
 	createFloorGrid();
 	setTopView();
@@ -130,6 +139,12 @@ void Scene3DRenderer::processForeground(Camera* camera)
 	// Remove noise
 #ifndef USE_GRAPHCUTS
 	// Using Erosion and/or Dilation of the foreground image
+	Mat img_proc1;
+	erode(foreground, img_proc1, Mat(), Point(-1, -1), _e_iterations);
+	Mat img_proc2;
+	dilate(img_proc1, img_proc2, Mat(), Point(-1, -1), _d_iterations);
+	Mat img_proc3;
+	erode(img_proc2, img_proc3, Mat(), Point(-1, -1), _e2_iterations);
 #else
 	// Using Graph cuts on the foreground image
 #endif
