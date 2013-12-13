@@ -149,7 +149,7 @@ void Scene3DRenderer::processForeground(Camera* camera)
 	// Using Graph cuts on the foreground image
 #endif
 
-	camera->setForegroundImage(foreground);
+	camera->setForegroundImage(img_proc3);
 }
 
 /**
