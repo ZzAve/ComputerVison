@@ -139,11 +139,9 @@ void Scene3DRenderer::processForeground(Camera* camera)
 	// Remove noise
 #ifndef USE_GRAPHCUTS
 	// Using Erosion and/or Dilation of the foreground image
-	Mat img_proc1;
+	Mat img_proc1, img_proc2, img_proc3;
 	erode(foreground, img_proc1, Mat(), Point(-1, -1), _e_iterations);
-	Mat img_proc2;
 	dilate(img_proc1, img_proc2, Mat(), Point(-1, -1), _d_iterations);
-	Mat img_proc3;
 	erode(img_proc2, img_proc3, Mat(), Point(-1, -1), _e2_iterations);
 #else
 	// Using Graph cuts on the foreground image

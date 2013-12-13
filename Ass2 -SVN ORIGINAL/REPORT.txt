@@ -1,0 +1,21 @@
+Tudor Andronic 
+Julius van Dis 4038010
+
+====================
+III.2d Getting the intrinsics
+In order to get our intrinsics for the different camera's we adapted our code of the first assignment. Since there were some reflection spots on a few of the frames of the videos, it was not an option to let the entire video(s) be used for the calibration.
+
+Therefore, we adapted the code, such that we were asked at each suitable frame whether we would like to use it for the calibration or not. A suitable frame, is a frame for which the checkerboard could be found. To prevent to use images that are all too similar, a threshold was built in as well. To see whether the images were similar, the absolute difference in position of all the checkerboard corners were taken into account. If the difference was large enough, the image would pass the test. If it would pass the test when compared to all already selected frames, we were asked the question whether to use the image or not.
+
+Unfortunately, checking all the video's and determining whether it is suitable to use for calibration is rather time consuming. To calibrate one camera, using one video took us about 15 min, of which appr. 8 minutes were for accepting/disaccepting frames.
+
+===============
+IV.5 determining HSV values
+
+!!!!!!!!!!!!!!!!!!!!!! ??????????????????????? !!!!!!!!!!!!!!!!!!!!
+
+
+
+=================
+Additional information
+In order to improve our results we also included the dilation() and erode() functions, which could also be set using one of the sliders in the "Video" window. We have chosen to do it in threefold: first eroding, then dilating and finally eroding again. The first erode() ensures that all leftover noise from the HSV filters is removed. Dilation then makes sure that there are no holes anymore in the person (Tudor), and the second erode makes him look less fat.
