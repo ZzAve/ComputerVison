@@ -1,0 +1,27 @@
+﻿Build started 08/01/2014 12:15:21.
+     1>Project "D:\Github\ComputerVison\Ass1.1\Ass1.1\Ass1.1.vcxproj" on node 2 (Build target(s)).
+     1>InitializeBuildStatus:
+         Touching "x64\Release\Ass1.1.unsuccessfulbuild".
+       ClCompile:
+         C:\Program Files (x86)\Microsoft Visual Studio 11.0\VC\bin\x86_amd64\CL.exe /c /Iinclude /ID:\OpenCV\opencv\build\\include /Zi /nologo /W3 /WX- /sdl /O2 /Oi /GL /D WIN32 /D NDEBUG /D _CONSOLE /D _UNICODE /D UNICODE /Gm- /EHsc /MD /GS /Gy /fp:precise /Zc:wchar_t /Zc:forScope /Fo"x64\Release\\" /Fd"x64\Release\vc110.pdb" /Gd /TP /errorReport:prompt Main_next_level.cpp
+         Main_next_level.cpp
+     1>Main_next_level.cpp(124): warning C4244: 'argument' : conversion from 'double' to 'float', possible loss of data
+     1>Main_next_level.cpp(161): warning C4244: 'argument' : conversion from 'double' to 'float', possible loss of data
+     1>Main_next_level.cpp(183): warning C4244: 'argument' : conversion from 'double' to 'float', possible loss of data
+     1>Main_next_level.cpp(258): warning C4101: 'errorB' : unreferenced local variable
+     1>Main_next_level.cpp(258): warning C4101: 'errorA' : unreferenced local variable
+     1>Main_next_level.cpp(258): warning C4101: 'errorC' : unreferenced local variable
+     1>Main_next_level.cpp(547): warning C4244: 'argument' : conversion from 'const int' to 'float', possible loss of data
+       Link:
+         C:\Program Files (x86)\Microsoft Visual Studio 11.0\VC\bin\x86_amd64\link.exe /ERRORREPORT:PROMPT /OUT:"D:\Github\ComputerVison\Ass1.1\x64\Release\Ass1.1.exe" /INCREMENTAL:NO /NOLOGO /LIBPATH:D:\OpenCV\opencv\build\\x64\vc11\lib opencv_calib3d246.lib opencv_contrib246.lib opencv_core246.lib opencv_features2d246.lib opencv_flann246.lib opencv_gpu246.lib opencv_haartraining_engine.lib opencv_highgui246.lib opencv_imgproc246.lib opencv_legacy246.lib opencv_ml246.lib opencv_nonfree246.lib opencv_objdetect246.lib opencv_ocl246.lib opencv_photo246.lib opencv_stitching246.lib opencv_superres246.lib opencv_ts246.lib opencv_video246.lib opencv_videostab246.lib kernel32.lib user32.lib gdi32.lib winspool.lib comdlg32.lib advapi32.lib shell32.lib ole32.lib oleaut32.lib uuid.lib odbc32.lib odbccp32.lib /MANIFEST /MANIFESTUAC:"level='asInvoker' uiAccess='false'" /manifest:embed /DEBUG /PDB:"D:\Github\ComputerVison\Ass1.1\x64\Release\Ass1.1.pdb" /SUBSYSTEM:CONSOLE /OPT:REF /OPT:ICF /LTCG /TLBID:1 /DYNAMICBASE /NXCOMPAT /IMPLIB:"D:\Github\ComputerVison\Ass1.1\x64\Release\Ass1.1.lib" /MACHINE:X64 x64\Release\Main_next_level.obj
+         Generating code
+         Finished generating code
+         Ass1.1.vcxproj -> D:\Github\ComputerVison\Ass1.1\x64\Release\Ass1.1.exe
+       FinalizeBuildStatus:
+         Deleting file "x64\Release\Ass1.1.unsuccessfulbuild".
+         Touching "x64\Release\Ass1.1.lastbuildstate".
+     1>Done Building Project "D:\Github\ComputerVison\Ass1.1\Ass1.1\Ass1.1.vcxproj" (Build target(s)).
+
+Build succeeded.
+
+Time Elapsed 00:00:05.22

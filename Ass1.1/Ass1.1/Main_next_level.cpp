@@ -1,6 +1,7 @@
 #define _CRT_SECURE_NO_DEPRECATE
 
 #include <iostream>
+#include <fstream>
 #include <opencv2/highgui/highgui.hpp>
 #include <opencv2/imgproc/imgproc.hpp>
 #include <opencv\cv.h>
@@ -18,13 +19,14 @@ const int nrHorizontalCorners = 8;
 const int nrVerticalCorners = 6;
 const Size board_size = Size(nrHorizontalCorners,nrVerticalCorners);
 int imgCount =0;
+
 String videoPath;
 String camNr = "3";
 String camPath = "../data/cam";
 String imgName = "calibrationImg";
 String imgExt = ".jpg";
 int startNr= 0;
-int endNr = 85;
+int endNr = 73;
 
 /*
 *Class Line, is an extension of the already existing class line. Upon creation, the img 
@@ -316,7 +318,9 @@ int cameraCalibration(VideoCapture stream, vector<Point3f> phys_corners, Mat& in
 					  image_corners.push_back(corners);
 					  physical_corners.push_back(phys_corners);
 					  cout<<"Snap stored! Successes: "<<successes<<endl;
-					  stream >> image; stream >> image;stream >> image;stream >> image;
+					  for (int skip=0;skip<30;skip++){
+						stream >> image; 
+					  }
 				  }
 				}
 			 
@@ -340,11 +344,11 @@ int cameraCalibration(VideoCapture stream, vector<Point3f> phys_corners, Mat& in
 	cout<< "Video is done, let's calibrate!"<<endl;
 	destroyWindow("win1");
 	 // Matrix intrinsic -> K 
-	 float intdata[] = {755.435, 0, 464.8648, 0, 566.50, 385.21,0, 0, 1};
+	 float intdata[] = {600, 0, 460, 0, 565, 380 , 0, 0, 1};
 	 intrinsic = Mat(3, 3, CV_32FC1,intdata).clone(); //initialisation
 	 //intrinsic = Mat(3, 3, CV_32FC1); //initialisation
-	 intrinsic.ptr<float>(0)[0] = 1;
-     intrinsic.ptr<float>(1)[1] = 1;
+	 //intrinsic.ptr<float>(0)[0] = 1;
+     //intrinsic.ptr<float>(1)[1] = 1;
 
 	 
 
@@ -365,6 +369,11 @@ int cameraCalibration(VideoCapture stream, vector<Point3f> phys_corners, Mat& in
      return 0;
 }
 
+/*
+* In the case images are already available to perform the calibration, they also can be used
+* THE FUNCTION WAS NOT TESTED WITH IMAGES 
+*
+*/
 int cameraCalibration(vector<Point3f> phys_corners, Mat& intrinsic, Mat& distCoeffs)
 {
 	/* 2 Matrices of the physical positions of the corners
@@ -384,9 +393,10 @@ int cameraCalibration(vector<Point3f> phys_corners, Mat& intrinsic, Mat& distCoe
 	for (int i=startNr;i<=endNr;i++)
 	{
 		// feed image
-		String file = camPath+camNr+"/intrinsics"+imgName+to_string(i)+imgExt;
+		String file = camPath+camNr+"/intrinsics/"+imgName+to_string(i)+imgExt;
+		cout<<file<<endl;
 		image = imread(file);
-
+		imgSize = image.size();
 		// process
 		 Mat proc_img = image;
 		  cvtColor(image, gray_image, CV_BGR2GRAY);
@@ -405,7 +415,6 @@ int cameraCalibration(vector<Point3f> phys_corners, Mat& intrinsic, Mat& distCoe
 			  
 			  image_corners.push_back(corners);
 			  physical_corners.push_back(phys_corners);
-			  successes++;
 		      cout<<"Snap stored! Successes: "<<successes<<"/"<<endNr<<endl;
 			  successes++;
 		  } else {
@@ -541,17 +550,19 @@ int main()
 	
 	/* Now calibrate the camera */
 	Mat intrinsic, distCoeffs;
-	cameraCalibration(capture,physical_corners,intrinsic,distCoeffs);
+	cameraCalibration(physical_corners,intrinsic,distCoeffs);
 	cout<<"The camera is calibrated. Now, the drawing can commence!"<<endl;
-	FILE *intrinz;
-	intrinz = fopen("intrinsics.txt","w");
+	ofstream intr;
+	String filename="intrinsics"+camPath+camNr+"txt";
+	intr.open(filename);
 	for (int i=0; i<intrinsic.size().height;i++){
+
 		for (int j=0; j<intrinsic.size().width;j++){
-			fprintf(intrinz,"%f \t",&intrinsic.at<double>(i,j));
+			intr << intrinsic.at<double>(i,j) << "\t";
 		}
-		fprintf(intrinz,"\n");
+		intr << "\n";
 	}
-	fclose(intrinz);
+	intr.close();
 
 	/*Now, for every next iteration use the next frame to find the chessboard, and draw a square on it*/
 	capture= VideoCapture(videoPath);

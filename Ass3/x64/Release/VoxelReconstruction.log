@@ -1,0 +1,55 @@
+﻿Build started 08/01/2014 12:36:38.
+     1>Project "D:\Github\ComputerVison\Ass3\VoxelReconstruction.vcxproj" on node 2 (Build target(s)).
+     1>InitializeBuildStatus:
+         Creating "x64\Release\VoxelReconstruction.unsuccessfulbuild" because "AlwaysCreate" was specified.
+       ClCompile:
+         C:\Program Files (x86)\Microsoft Visual Studio 11.0\VC\bin\x86_amd64\CL.exe /c /Iinclude /ID:\OpenCV\opencv\build\\include /Zi /nologo /W3 /WX- /O2 /D WIN32 /D NDEBUG /D _WINDOWS /Gm- /EHsc /MD /GS /fp:precise /Zc:wchar_t /Zc:forScope /Fo"x64\Release\\" /Fd"x64\Release\vc110.pdb" /Gd /TP /errorReport:prompt src\controllers\arcball.cpp src\controllers\Camera.cpp src\controllers\Glut.cpp src\controllers\Reconstructor.cpp src\controllers\Scene3DRenderer.cpp src\utilities\General.cpp src\VoxelReconstruction.cpp
+         arcball.cpp
+     1>src\controllers\arcball.cpp(50): warning C4244: 'argument' : conversion from 'double' to 'float', possible loss of data
+     1>src\controllers\arcball.cpp(59): warning C4244: '=' : conversion from 'double' to 'GLfloat', possible loss of data
+     1>src\controllers\arcball.cpp(86): warning C4244: 'argument' : conversion from 'GLint' to 'GLfloat', possible loss of data
+     1>src\controllers\arcball.cpp(88): warning C4244: 'argument' : conversion from 'GLint' to 'GLfloat', possible loss of data
+     1>src\controllers\arcball.cpp(180): warning C4244: 'initializing' : conversion from 'double' to 'float', possible loss of data
+     1>src\controllers\arcball.cpp(200): warning C4244: 'initializing' : conversion from 'double' to 'GLfloat', possible loss of data
+     1>src\controllers\arcball.cpp(251): warning C4244: 'initializing' : conversion from 'double' to 'GLfloat', possible loss of data
+     1>src\controllers\arcball.cpp(278): warning C4244: 'initializing' : conversion from 'double' to 'GLfloat', possible loss of data
+     1>src\controllers\arcball.cpp(279): warning C4244: 'initializing' : conversion from 'double' to 'GLfloat', possible loss of data
+         Camera.cpp
+     1>src\controllers\Camera.cpp(83): warning C4244: '=' : conversion from 'double' to 'int', possible loss of data
+     1>src\controllers\Camera.cpp(84): warning C4244: '=' : conversion from 'double' to 'int', possible loss of data
+     1>src\controllers\Camera.cpp(89): warning C4244: '=' : conversion from 'double' to 'long', possible loss of data
+     1>src\controllers\Camera.cpp(330): warning C4244: 'initializing' : conversion from 'const int' to 'float', possible loss of data
+     1>src\controllers\Camera.cpp(331): warning C4244: 'initializing' : conversion from 'const int' to 'float', possible loss of data
+     1>src\controllers\Camera.cpp(362): warning C4244: 'argument' : conversion from 'const int' to 'float', possible loss of data
+     1>src\controllers\Camera.cpp(364): warning C4244: 'argument' : conversion from 'const int' to 'float', possible loss of data
+     1>src\controllers\Camera.cpp(366): warning C4244: 'argument' : conversion from 'const int' to 'float', possible loss of data
+         Glut.cpp
+     1>src\controllers\Glut.cpp(838): warning C4244: 'initializing' : conversion from 'int' to 'const float', possible loss of data
+     1>src\controllers\Glut.cpp(839): warning C4244: 'initializing' : conversion from 'int' to 'const float', possible loss of data
+     1>src\controllers\Glut.cpp(840): warning C4244: 'initializing' : conversion from 'int' to 'const float', possible loss of data
+         Reconstructor.cpp
+         Scene3DRenderer.cpp
+         General.cpp
+         VoxelReconstruction.cpp
+     1>src\VoxelReconstruction.cpp(188): warning C4101: 'i' : unreferenced local variable
+     1>src\VoxelReconstruction.cpp(188): warning C4101: 'k' : unreferenced local variable
+     1>src\VoxelReconstruction.cpp(188): warning C4101: 'j' : unreferenced local variable
+         Generating Code...
+       Link:
+         C:\Program Files (x86)\Microsoft Visual Studio 11.0\VC\bin\x86_amd64\link.exe /ERRORREPORT:PROMPT /OUT:"D:\Github\ComputerVison\Ass3\x64\Release\VoxelReconstruction.exe" /INCREMENTAL /NOLOGO /LIBPATH:lib /LIBPATH:D:\OpenCV\opencv\build\\x64\vc11\lib opencv_core246.lib opencv_highgui246.lib opencv_imgproc246.lib opencv_calib3d246.lib OpenGL32.lib Glu32.lib kernel32.lib user32.lib gdi32.lib winspool.lib comdlg32.lib advapi32.lib shell32.lib ole32.lib oleaut32.lib uuid.lib odbc32.lib odbccp32.lib /MANIFEST /MANIFESTUAC:"level='asInvoker' uiAccess='false'" /manifest:embed /DEBUG /PDB:"D:\Github\ComputerVison\Ass3\x64\Release\VoxelReconstruction.pdb" /SUBSYSTEM:CONSOLE /OPT:REF /OPT:ICF /TLBID:1 /DYNAMICBASE /NXCOMPAT /IMPLIB:"D:\Github\ComputerVison\Ass3\x64\Release\VoxelReconstruction.lib" /MACHINE:X64 x64\Release\arcball.obj
+         x64\Release\Camera.obj
+         x64\Release\Glut.obj
+         x64\Release\Reconstructor.obj
+         x64\Release\Scene3DRenderer.obj
+         x64\Release\General.obj
+         x64\Release\VoxelReconstruction.obj
+     1>LINK : warning LNK4075: ignoring '/INCREMENTAL' due to '/OPT:ICF' specification
+         VoxelReconstruction.vcxproj -> D:\Github\ComputerVison\Ass3\x64\Release\VoxelReconstruction.exe
+       FinalizeBuildStatus:
+         Deleting file "x64\Release\VoxelReconstruction.unsuccessfulbuild".
+         Touching "x64\Release\VoxelReconstruction.lastbuildstate".
+     1>Done Building Project "D:\Github\ComputerVison\Ass3\VoxelReconstruction.vcxproj" (Build target(s)).
+
+Build succeeded.
+
+Time Elapsed 00:00:11.42
