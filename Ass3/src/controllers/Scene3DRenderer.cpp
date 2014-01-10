@@ -143,11 +143,12 @@ void Scene3DRenderer::processForeground(Camera* camera)
 	erode(foreground, img_proc1, Mat(), Point(-1, -1), _e_iterations);
 	dilate(img_proc1, img_proc2, Mat(), Point(-1, -1), _d_iterations);
 	erode(img_proc2, img_proc3, Mat(), Point(-1, -1), _e2_iterations);
+	foreground = img_proc3;
 #else
 	// Using Graph cuts on the foreground image
 #endif
 
-	camera->setForegroundImage(img_proc3);
+	camera->setForegroundImage(foreground);
 }
 
 /**

@@ -815,8 +815,21 @@ void Glut::drawVoxels()
 
 	vector<Reconstructor::Voxel*> voxels = _glut->getScene3d().getReconstructor().getVisibleVoxels();
 	for (size_t v = 0; v < voxels.size(); v++)
-	{
-		glColor4f(0.5f, 0.5f, 0.5f, 0.5f);
+	{			
+		int color = voxels[v]->color;
+		// USE COLOR TO DRAW THE VOXEL ACCORDING TO A CERTAIN COLOR!
+		//Colors
+		if (color == 4)
+			glColor4f(255.0/256,236.0/256,0/256,0.5f);
+		else if (color ==3)
+			glColor4f(0.0/256,134.0/256,203.0/256,0.5f);
+		else if (color ==2)
+			glColor4f(50.0/256,137.0/256,37.0/256,0.5f);
+		else if (color == 1)
+			glColor4f(226.0/256,0.0/256,26.0/256,0.5f);
+		else
+			glColor4f(0.5f,0.5f,0.5f,0.5f);
+
 		glVertex3f((GLfloat) voxels[v]->x, (GLfloat) voxels[v]->y, (GLfloat) voxels[v]->z);
 	}
 

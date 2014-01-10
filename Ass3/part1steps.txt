@@ -1,0 +1,9 @@
+Stepwise guide
+
+- set correct settings for HSV e1 d e2
+- select suitable frame such that four 'perfect' voxel clusters are present
+- perform clustering based on top view (reconstruction!)
+- Repeat process a number of times with random starting points to ensure global max is found
+- Project voxels on view. THINK ABOUT OCCLUSION!! 
+	If two voxels are placed on a view, only consider the one closest!
+- Make color model with HISTOGRAMS

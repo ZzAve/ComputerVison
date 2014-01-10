@@ -9,9 +9,7 @@
 #define RECONSTRUCTOR_H_
 
 #include <vector>
-
 #include "opencv2/opencv.hpp"
-
 #include "Camera.h"
 
 namespace nl_uu_science_gmt
@@ -23,7 +21,7 @@ public:
 	struct Voxel
 	{
 		int x, y, z;
-		cv::Scalar color;
+		int color;
 		std::vector<cv::Point> camera_projection;
 		std::vector<int> valid_camera_projection;
 	};
@@ -49,6 +47,7 @@ public:
 	virtual ~Reconstructor();
 
 	void update();
+	cv::Mat calculatekMeans(cv::Mat &);
 
 	const std::vector<Voxel*>& getVisibleVoxels() const
 	{
@@ -65,11 +64,16 @@ public:
 		_visible_voxels = visibleVoxels;
 	}
 
+	void setColor(int voxelId, int colorId)
+	{ 
+		_visible_voxels[voxelId] -> color = colorId;
+	}
+
 	void setVoxels(const std::vector<Voxel*>& voxels)
 	{
 		_voxels = voxels;
 	}
-
+	
 	const std::vector<cv::Point3f*>& getCorners() const
 	{
 		return _corners;

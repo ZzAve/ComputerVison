@@ -96,6 +96,7 @@ void Reconstructor::initialize()
 				voxel->x = x;
 				voxel->y = y;
 				voxel->z = z;
+				voxel->color = -1;
 				voxel->camera_projection = vector<Point>(_cameras.size());
 				voxel->valid_camera_projection = vector<int>(_cameras.size(), 0);
 
@@ -166,6 +167,50 @@ void Reconstructor::update()
 			_visible_voxels.push_back(voxel);
 		}
 	}
+	
+	//Calculate the labels and stuff
+	Mat labels;
+	calculatekMeans(labels);
+	cout<<"Labels"<<endl<<labels<<endl<<endl;
+}
+
+/* calculatekMeans, clusters the currently visible voxels, based upon the top view, meaning that only x and y coordinates are considered.
+ 
+ 
+*/
+Mat Reconstructor::calculatekMeans(Mat &bestLabels)
+{
+	vector<Voxel*> visVox = getVisibleVoxels();
+	Mat points;
+	double x,y;
+	for (int i=0;i<visVox.size();i++)
+	{
+		x = visVox.at(i)->x;
+		y = visVox.at(i)->y;
+		Point2f point = Point2f(x,y);
+		points.push_back(point);
+	}
+
+	//Apply KMeans
+	//double kmeans(InputArray data, int K, InputOutputArray bestLabels, 
+	//				TermCriteria criteria, int attempts, int flags, OutputArray centers=noArray() )
+	Mat kCenters;
+
+	//Define criteria = ( type, max_iter = 10 , epsilon = 1.0 )
+	TermCriteria criteria = TermCriteria( CV_TERMCRIT_EPS+CV_TERMCRIT_ITER, 10, 10000);
+
+	//Set flags (Just to avoid line break in the code)
+	int flags = KMEANS_RANDOM_CENTERS;
+
+	//Perform kMeans
+	kmeans(points,4,bestLabels,criteria,8,flags,kCenters);
+		
+	for (int i=0;i<visVox.size();i++)
+	{
+		setColor(i,bestLabels.at<float>(i));
+	}
+
+	return kCenters;
 }
 
 } /* namespace nl_uu_science_gmt */
