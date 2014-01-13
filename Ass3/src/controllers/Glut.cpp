@@ -185,6 +185,28 @@ int Glut::initializeWindows(const char* win_name)
  */
 void Glut::mainLoopWindows()
 {
+	update(0);
+	//Get correct frame
+
+	getScene3d().setCurrentFrame(307);
+
+	//perform kmeans to get 4 clusters
+	Mat centers, labels;
+	centers = getScene3d().getReconstructor().calculatekMeans(labels);
+
+	//project voxels back on view
+	vector<vector<Point2f>> imgPoints;
+	imgPoints = getScene3d().getReconstructor().reprojectVoxels(labels);
+	cout<<imgPoints[0]<<endl<<endl;
+	cout<<imgPoints[1]<<endl<<endl;;
+	cout<<imgPoints[2]<<endl<<endl;
+	cout<<imgPoints[3]<<endl<<endl;
+	waitKey();
+	//create color model based on clusters	
+
+	//Then go!
+
+
 	while(!_glut->getScene3d().isQuit())
 	{
 		update(0);
@@ -574,7 +596,7 @@ void Glut::update(int v)
 		scene3d.setPreviousFrame(scene3d.getCurrentFrame());
 	}
 	else if (scene3d.getHThreshold() != scene3d.getPHThreshold() || scene3d.getSThreshold() != scene3d.getPSThreshold()
-						|| scene3d.getVThreshold() != scene3d.getPVThreshold())
+		|| scene3d.getVThreshold() != scene3d.getPVThreshold())
 	{
 		// Update the scene if one of the HSV sliders was moved (when the video is paused)
 		scene3d.processFrame();
@@ -807,25 +829,40 @@ void Glut::drawArcball()
 void Glut::drawVoxels()
 {
 	glPushMatrix();
+	glTranslatef(0, 0, 0);
+	Mat labels, centers;
+	centers = _glut->getScene3d().getReconstructor().calculatekMeans(labels);
+	for (int i =0;i<centers.size().height;i++)
+	{
+		glBegin(GL_LINES);
+		glColor4f(0.5f,0.5f,0.5f,0.5f);
+		glLineWidth(2.0f);
+		glVertex3f((GLfloat) centers.at<Point>(i).x, (GLfloat) centers.at<Point>(i).y, 0.0);
+		glVertex3f((GLfloat) centers.at<Point>(i).x, (GLfloat) centers.at<Point>(i).y, 3000.0);
+		glEnd();
+	}
 
 	// apply default translation
 	glTranslatef(0, 0, 0);
 	glPointSize(2.0f);
 	glBegin(GL_POINTS);
 
+
 	vector<Reconstructor::Voxel*> voxels = _glut->getScene3d().getReconstructor().getVisibleVoxels();
+
+	
 	for (size_t v = 0; v < voxels.size(); v++)
 	{			
-		int color = voxels[v]->color;
+		int color = labels.at<int>(v);
 		// USE COLOR TO DRAW THE VOXEL ACCORDING TO A CERTAIN COLOR!
 		//Colors
-		if (color == 4)
+		if (color == 3)
 			glColor4f(255.0/256,236.0/256,0/256,0.5f);
-		else if (color ==3)
-			glColor4f(0.0/256,134.0/256,203.0/256,0.5f);
 		else if (color ==2)
+			glColor4f(0.0/256,134.0/256,203.0/256,0.5f);
+		else if (color ==1)
 			glColor4f(50.0/256,137.0/256,37.0/256,0.5f);
-		else if (color == 1)
+		else if (color == 0)
 			glColor4f(226.0/256,0.0/256,26.0/256,0.5f);
 		else
 			glColor4f(0.5f,0.5f,0.5f,0.5f);

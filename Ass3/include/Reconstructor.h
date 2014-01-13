@@ -48,7 +48,7 @@ public:
 
 	void update();
 	cv::Mat calculatekMeans(cv::Mat &);
-
+	std::vector<std::vector<cv::Point2f>> reprojectVoxels(cv::Mat);
 	const std::vector<Voxel*>& getVisibleVoxels() const
 	{
 		return _visible_voxels;
@@ -87,6 +87,11 @@ public:
 	const cv::Size& getPlaneSize() const
 	{
 		return _plane_size;
+	}
+
+	const std::vector<Camera*>& getCameras()
+	{
+		return _cameras;
 	}
 };
 

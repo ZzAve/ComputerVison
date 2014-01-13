@@ -1,22 +1,11 @@
-﻿Build started 10/01/2014 15:30:50.
+﻿Build started 12/01/2014 17:35:40.
      1>Project "D:\Github\ComputerVison\Ass3\VoxelReconstruction.vcxproj" on node 2 (Build target(s)).
      1>InitializeBuildStatus:
          Creating "x64\Release\VoxelReconstruction.unsuccessfulbuild" because "AlwaysCreate" was specified.
        ClCompile:
-         C:\Program Files (x86)\Microsoft Visual Studio 11.0\VC\bin\x86_amd64\CL.exe /c /Iinclude /ID:\OpenCV\opencv\build\\include /Zi /nologo /W3 /WX- /O2 /D WIN32 /D NDEBUG /D _WINDOWS /Gm- /EHsc /MD /GS /fp:precise /Zc:wchar_t /Zc:forScope /Fo"x64\Release\\" /Fd"x64\Release\vc110.pdb" /Gd /TP /errorReport:prompt src\VoxelReconstruction.cpp src\controllers\Glut.cpp src\controllers\Reconstructor.cpp src\controllers\Scene3DRenderer.cpp
-         VoxelReconstruction.cpp
-     1>src\VoxelReconstruction.cpp(188): warning C4101: 'i' : unreferenced local variable
-     1>src\VoxelReconstruction.cpp(188): warning C4101: 'k' : unreferenced local variable
-     1>src\VoxelReconstruction.cpp(188): warning C4101: 'j' : unreferenced local variable
-         Glut.cpp
-     1>src\controllers\Glut.cpp(851): warning C4244: 'initializing' : conversion from 'int' to 'const float', possible loss of data
-     1>src\controllers\Glut.cpp(852): warning C4244: 'initializing' : conversion from 'int' to 'const float', possible loss of data
-     1>src\controllers\Glut.cpp(853): warning C4244: 'initializing' : conversion from 'int' to 'const float', possible loss of data
+         C:\Program Files (x86)\Microsoft Visual Studio 11.0\VC\bin\x86_amd64\CL.exe /c /Iinclude /ID:\OpenCV\opencv\build\\include /Zi /nologo /W3 /WX- /O2 /D WIN32 /D NDEBUG /D _WINDOWS /Gm- /EHsc /MD /GS /fp:precise /Zc:wchar_t /Zc:forScope /Fo"x64\Release\\" /Fd"x64\Release\vc110.pdb" /Gd /TP /errorReport:prompt src\controllers\Reconstructor.cpp
          Reconstructor.cpp
-     1>src\controllers\Reconstructor.cpp(190): warning C4244: 'argument' : conversion from 'double' to 'float', possible loss of data
-     1>src\controllers\Reconstructor.cpp(210): warning C4244: 'argument' : conversion from 'float' to 'int', possible loss of data
-         Scene3DRenderer.cpp
-         Generating Code...
+     1>src\controllers\Reconstructor.cpp(189): warning C4244: 'argument' : conversion from 'double' to 'float', possible loss of data
        Link:
          C:\Program Files (x86)\Microsoft Visual Studio 11.0\VC\bin\x86_amd64\link.exe /ERRORREPORT:PROMPT /OUT:"D:\Github\ComputerVison\Ass3\x64\Release\VoxelReconstruction.exe" /INCREMENTAL /NOLOGO /LIBPATH:lib /LIBPATH:D:\OpenCV\opencv\build\\x64\vc11\lib opencv_core246.lib opencv_highgui246.lib opencv_imgproc246.lib opencv_calib3d246.lib OpenGL32.lib Glu32.lib kernel32.lib user32.lib gdi32.lib winspool.lib comdlg32.lib advapi32.lib shell32.lib ole32.lib oleaut32.lib uuid.lib odbc32.lib odbccp32.lib /MANIFEST /MANIFESTUAC:"level='asInvoker' uiAccess='false'" /manifest:embed /DEBUG /PDB:"D:\Github\ComputerVison\Ass3\x64\Release\VoxelReconstruction.pdb" /SUBSYSTEM:CONSOLE /OPT:REF /OPT:ICF /TLBID:1 /DYNAMICBASE /NXCOMPAT /IMPLIB:"D:\Github\ComputerVison\Ass3\x64\Release\VoxelReconstruction.lib" /MACHINE:X64 x64\Release\arcball.obj
          x64\Release\Camera.obj
@@ -34,4 +23,4 @@
 
 Build succeeded.
 
-Time Elapsed 00:00:07.99
+Time Elapsed 00:00:02.55

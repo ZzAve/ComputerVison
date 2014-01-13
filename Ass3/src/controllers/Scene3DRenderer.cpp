@@ -51,12 +51,12 @@ Scene3DRenderer::Scene3DRenderer(Reconstructor &r, const vector<Camera*> &cs) :
 	_current_frame = 0;
 	_previous_frame = -1;
 
-	const int H = 8;
-	const int S = 12;
-	const int V = 40;
+	const int H = 0;
+	const int S = 57;
+	const int V = 53;
 	const int E = 1;
-	const int D = 3;
-	const int E2 = 2;
+	const int D = 4;
+	const int E2 = 3;
 	_h_threshold = H;
 	_ph_threshold = H;
 	_s_threshold = S;

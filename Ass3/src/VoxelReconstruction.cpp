@@ -194,44 +194,6 @@ vector<int> VoxelReconstruction::determine_best_hsv(vector<Camera *> cams,Scene3
 	cam = getBestHsv(cams[2],render,photoshoped,3);
 	cout<<"Determined best HSVs"<<endl;
 	return cam;
-	/*
-	if(cam.size() != 0)
-		hsv.push_back(cam);
-	/*
-	for(i=0;i<4;i++)
-	{
-
-		if(i == 0)
-		{
-			vector<int> cam1;
-			cam1 = getBestHsv(cams[i],render,photoshoped1,1);
-			if(cam1.size() != 0)
-				hsv.push_back(cam1);
-		}
-		else if(i == 1)
-		{
-			vector<int> cam2;
-			cam2 = getBestHsv(cams[i],render,photoshoped2,2);
-			if(cam2.size() != 0)
-				hsv.push_back(cam2);
-			
-		}
-		else if(i == 2)
-		{
-			vector<int> cam3;
-			cam3 = getBestHsv(cams[i],render,photoshoped3,3);
-			if(cam3.size() != 0)
-				hsv.push_back(cam3);
-		}
-		else if(i == 3)
-		{
-			vector<int> cam4;
-			cam4 = getBestHsv(cams[i],render,photoshoped4,4);
-			if(cam4.size() != 0)
-				hsv.push_back(cam4);
-		}
-	
-	}*/
 }
 
 
@@ -268,58 +230,18 @@ void VoxelReconstruction::run(int argc, char** argv)
 
 	vector<Camera*> cams = scene3d.getCameras();
 	//cams[0]->setVideoFrame(135);
-	imwrite("camera1.jpg",cams[0]->getVideoFrame(135));
-	imwrite("camera2.jpg",cams[1]->getVideoFrame(160));
-	imwrite("camera3.jpg",cams[2]->getVideoFrame(150));
-	imwrite("camera4.jpg",cams[3]->getVideoFrame(128));
-	vector<int> hsv;
+	imwrite("camera1.jpg",cams[0]->getVideoFrame(307));
+	imwrite("camera2.jpg",cams[1]->getVideoFrame(307));
+	imwrite("camera3.jpg",cams[2]->getVideoFrame(307));
+	imwrite("camera4.jpg",cams[3]->getVideoFrame(307));
+	//vector<int> hsv;
 	//hsv = VoxelReconstruction::determine_best_hsv(cams,scene3d);
-	/*
-	cout<<"setting settings"<<endl;
-	scene3d.setHThreshold(hsv.at(0));
-	scene3d.setSThreshold(hsv.at(1));
-	scene3d.setVThreshold(hsv.at(2));
-	cout<< "SETTINGS:" <<endl;
-	cout<<hsv.at(0)<<endl;
-	cout<<hsv.at(1)<<endl;
-	cout<<hsv.at(2)<<endl;
-	//determine_best_hsv(cams);
-	/*
-	for(int i=0;i<4;i++)
-	{
-		if(i == 1)
-		{
-			cams[1]->setVideoFrame(135);
-			bestHsv(cams[1]->getVideoFrame(135));
-		}
-	}
-	*/
-	/*
-	Vector<Camera*> cams = scene3d.getCameras();
-	for(int i=0;i<cams.size();i++)
-	{
-		scene3d.setCurrentCamera(i);
-		cout<<"Reconstructing camera "<<i<<" "<<endl;
-		cout<<"======================================"<<endl;
-		for(int j=0;j<scene3d.getNumberOfFrames()-1;j++)
-		{
-			scene3d.setCurrentFrame(j);
-			//Mat frame = cams[i]->getFrame();
-			Mat foreground = cams[i]->getForegroundImage();
-			vector<Mat> hsv = cams[i]->getBgHsvChannels();
-			int h = scene3d.getHThreshold();
-			int s = scene3d.getSThreshold();
-			int v = scene3d.getVThreshold();
-			cout<<"The matrix is"<<foreground<<endl;
-			cout<<"H = "<<h<<" S = "<<s<<" V = "<<v<<endl;
-			cout<<"Going through frame "<<j<<endl;
-		}
-		cout<<"======================================="<<endl;
-	}
-	cout<<"Ended going through the images";
-	// ==================================================
-	*/
+
+	
+	
+
 	Glut glut(scene3d);
+
 
 #ifdef __linux__
 	glut.initializeLinux(SCENE_WINDOW.c_str(), argc, argv);
