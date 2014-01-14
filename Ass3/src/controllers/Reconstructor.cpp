@@ -196,7 +196,7 @@ Mat Reconstructor::calculatekMeans(Mat &bestLabels)
 	Mat kCenters;
 
 	//Define criteria = ( type, max_iter = 10 , epsilon = 1.0 )
-	TermCriteria criteria = TermCriteria( CV_TERMCRIT_EPS+CV_TERMCRIT_ITER, 10, 10000);
+	TermCriteria criteria = TermCriteria( CV_TERMCRIT_EPS+CV_TERMCRIT_ITER, 10, 1.0);
 
 	//Set flags (Just to avoid line break in the code)
 	int flags = KMEANS_RANDOM_CENTERS;
@@ -226,12 +226,13 @@ Mat Reconstructor::calculatekMeans(Mat &bestLabels)
 }
 
 
-vector<vector<Point2f>> Reconstructor::reprojectVoxels(Mat labels)
+vector<vector<vector<Point2f>>> Reconstructor::reprojectVoxels(Mat labels)
 {
 	// if points with the same coordinates, only take the one that is closest
 	vector<Voxel*> voxels = getVisibleVoxels();
 	int bx,by,kx,ky;
-	
+	Point3f camlocation;
+	float distBase, distK;
 	//check each view
 	for (int c=0; c<voxels[0]->camera_projection.size();c++)
 	{
@@ -255,13 +256,13 @@ vector<vector<Point2f>> Reconstructor::reprojectVoxels(Mat labels)
 							//two equal points. Now include the one closest to the camera
 							// get camera c
 							// get distances
-							Point3f camlocation = getCameras()[c] -> getCameraLocation();
+							 camlocation = getCameras()[c] -> getCameraLocation();
 							
-							float distBase = (camlocation.x - voxels[base]->z )*(camlocation.x - voxels[base]->z )+
+							distBase = (camlocation.x - voxels[base]->z )*(camlocation.x - voxels[base]->z )+
 							(camlocation.y - voxels[base]->y )*(camlocation.y - voxels[base]->y )+
 							(camlocation.z - voxels[base]->z )*(camlocation.z - voxels[base]->z );
 
-							float distK = (camlocation.x - voxels[k]->z )*(camlocation.x - voxels[k]->z )+
+							distK = (camlocation.x - voxels[k]->z )*(camlocation.x - voxels[k]->z )+
 							(camlocation.y - voxels[k]->y )*(camlocation.y - voxels[k]->y )+
 							(camlocation.z - voxels[k]->z )*(camlocation.z - voxels[k]->z );
 
@@ -276,18 +277,18 @@ vector<vector<Point2f>> Reconstructor::reprojectVoxels(Mat labels)
 			} // end base loop
 		}
 	}
-	vector<vector<Point2f>> imgPoints;
-	vector<Point2f> points;
+	vector<vector<vector<Point2f>>> imgPoints;
+	vector<vector<Point2f>> points(4);
 	for (int c=0; c<voxels[0]->camera_projection.size(); c++)
 	{
-		for (size_t v=0;v<voxels.size();v++)
-		{
-			if (voxels[v] -> valid_camera_projection[c] == 1)
-				points.push_back(voxels[v]->camera_projection[c]);
-		}
-		imgPoints.push_back(points);
+			for (size_t v=0;v<voxels.size();v++)
+			{
+				if (voxels[v] -> valid_camera_projection[c] == 1)
+					points[labels.at<int>(v)].push_back(voxels[v]->camera_projection[c]);
+			}
+			imgPoints.push_back(points);
 	}
-
+	
 	return imgPoints;
 }
 

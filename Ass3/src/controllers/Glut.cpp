@@ -186,21 +186,39 @@ int Glut::initializeWindows(const char* win_name)
 void Glut::mainLoopWindows()
 {
 	update(0);
+	display();
 	//Get correct frame
-
-	getScene3d().setCurrentFrame(307);
+	int frame = 306;
+	getScene3d().setCurrentFrame(frame);
 
 	//perform kmeans to get 4 clusters
 	Mat centers, labels;
 	centers = getScene3d().getReconstructor().calculatekMeans(labels);
 
 	//project voxels back on view
-	vector<vector<Point2f>> imgPoints;
+	vector<vector<vector<Point2f>>> imgPoints;
 	imgPoints = getScene3d().getReconstructor().reprojectVoxels(labels);
-	cout<<imgPoints[0]<<endl<<endl;
-	cout<<imgPoints[1]<<endl<<endl;;
-	cout<<imgPoints[2]<<endl<<endl;
-	cout<<imgPoints[3]<<endl<<endl;
+	
+	Mat hist;Scalar meann;
+	vector<vector<Mat>> histOverview(imgPoints.size());
+	for (int c=0;c<imgPoints.size();c++)
+	{
+		for (int label=0; label<imgPoints[c].size();label++)
+		{
+			cout<<"NR :  "<<c<<label<< "   ";
+			meann = getColorModelMean(getScene3d().getCameras()[c] -> getVideoFrame(frame),imgPoints[c][label]);
+			
+			//hist = getColorModel(getScene3d().getCameras()[c] -> getVideoFrame(frame),imgPoints[c][label]);
+			//histOverview[c].push_back(hist);
+			
+		}
+	}
+	
+	//cout<<"This is the histogram for 0 0: " << endl << hist<<endl;
+	//cout<<imgPoints[0]<<endl<<endl;
+	//cout<<imgPoints[1]<<endl<<endl;;
+	//cout<<imgPoints[2]<<endl<<endl;
+	//cout<<imgPoints[3]<<endl<<endl;
 	waitKey();
 	//create color model based on clusters	
 
@@ -832,13 +850,13 @@ void Glut::drawVoxels()
 	glTranslatef(0, 0, 0);
 	Mat labels, centers;
 	centers = _glut->getScene3d().getReconstructor().calculatekMeans(labels);
-	for (int i =0;i<centers.size().height;i++)
+	for (int i =0;i<centers.rows;i++)
 	{
 		glBegin(GL_LINES);
 		glColor4f(0.5f,0.5f,0.5f,0.5f);
 		glLineWidth(2.0f);
-		glVertex3f((GLfloat) centers.at<Point>(i).x, (GLfloat) centers.at<Point>(i).y, 0.0);
-		glVertex3f((GLfloat) centers.at<Point>(i).x, (GLfloat) centers.at<Point>(i).y, 3000.0);
+		glVertex3f((GLfloat) centers.at<float>(i,0), (GLfloat) centers.at<float>(i,1), 0.0);
+		glVertex3f((GLfloat) centers.at<float>(i,0), (GLfloat) centers.at<float>(i,1), 3000.0);
 		glEnd();
 	}
 
@@ -938,5 +956,90 @@ void Glut::drawInfo()
 	glPopMatrix();
 #endif
 }
+
+
+
+Scalar Glut::getColorModelMean(Mat image, vector<Point2f> targetPoints)
+{
+	Mat hsv;
+	cvtColor(image,hsv,CV_BGR2HSV);
+
+	Mat mask(hsv.size(),CV_8U);
+	mask = (Scalar(0));
+
+	for (int i=0;i<targetPoints.size();i++)
+		mask.at<int>(targetPoints[i].x,targetPoints[i].y) = 1;
+
+	Scalar meann = mean(image,mask);
+	cout<< "meann is: "<<meann<<endl;
+	return meann;
+}
+
+//getColorModel
+//
+// 
+// targetPoints contains a vectorlist of Point2f objects, 
+// given for a certain label and a certain view
+//
+Mat Glut::getColorModel(Mat image,vector<Point2f> targetPoints)
+{
+	Mat hsv;
+	cvtColor(image, hsv, CV_BGR2HSV);
+
+	Mat mask(hsv.size(),CV_8U);
+	mask = (Scalar(0));
+
+	for (int i=0;i<targetPoints.size();i++)
+		mask.at<int>(targetPoints[i].x,targetPoints[i].y) = 1;
+
+	 // Quantize the hue to 30 levels
+    // and the saturation to 32 levels
+    int hbins = 30, sbins = 32;
+    int histSize[] = {hbins, sbins};
+    
+	// hue varies from 0 to 179, see cvtColor
+    float hranges[] = { 0, 180 };
+    
+	// saturation varies from 0 (black-gray-white) to
+    // 255 (pure spectrum color)
+    float sranges[] = { 0, 256 };
+    const float* ranges[] = { hranges, sranges };
+    
+	MatND hist;
+    // we compute the histogram from the 0-th and 1-st channels
+    int channels[] = {0, 1};
+
+    calcHist( &hsv, 1, channels, mask,
+             hist, 2, histSize, ranges,
+             true, // the histogram is uniform
+             false );
+    
+	
+	/*double maxVal=0;
+    minMaxLoc(hist, 0, &maxVal, 0, 0);
+
+    int scale = 10;
+    Mat histImg = Mat::zeros(sbins*scale, hbins*10, CV_8UC3);
+
+    for( int h = 0; h < hbins; h++ )
+        for( int s = 0; s < sbins; s++ )
+        {
+            float binVal = hist.at<float>(h, s);
+            int intensity = cvRound(binVal*255/maxVal);
+            rectangle( histImg, Point(h*scale, s*scale),
+                        Point( (h+1)*scale - 1, (s+1)*scale - 1),
+                        Scalar::all(intensity),
+                        CV_FILLED );
+        }
+
+   namedWindow( "Source", 1 );
+    imshow( "Source", image );
+
+    namedWindow( "H-S Histogram", 1 );
+    imshow( "H-S Histogram", histImg );*/
+    return hist;
+}
+
+
 
 } /* namespace nl_uu_science_gmt */

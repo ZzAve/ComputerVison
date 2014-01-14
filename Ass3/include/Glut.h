@@ -57,7 +57,8 @@ class Glut
 public:
 	Glut(Scene3DRenderer &);
 	virtual ~Glut();
-
+	cv::Mat getColorModel(cv::Mat,std::vector<cv::Point2f>);
+	cv::Scalar getColorModelMean(cv::Mat,std::vector<cv::Point2f>);
 #ifdef __linux__
 	void initializeLinux(const char*, int, char**);
 	static void mouse(int, int, int, int);
