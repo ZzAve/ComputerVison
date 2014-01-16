@@ -965,7 +965,7 @@ Scalar Glut::getColorModelMean(Mat &image, Mat &targetPoints,int camera, int lab
 {
 
 	vector<Reconstructor::Voxel*> projVoxels =_glut->getScene3d().getReconstructor().getProjectableVoxels();
-	
+	//cout << "number of projected voxels"<<projVoxels.size() << endl;
 	Mat hsv;
 	cvtColor(image,hsv,CV_BGR2HSV);
 	Mat mask(hsv.size(),CV_8U);
@@ -974,14 +974,15 @@ Scalar Glut::getColorModelMean(Mat &image, Mat &targetPoints,int camera, int lab
 	{
 		if (projVoxels[v]->label == label)
 		{
-			mask.at<int>(projVoxels[v]->camera_projection[camera].y,projVoxels[v]->camera_projection[0].x) = 1;
-			
-			mask.at<int>(projVoxels[v]->camera_projection[camera].y+1,projVoxels[v]->camera_projection[camera].x) = 1;
+			mask.at<float>(projVoxels[v]->camera_projection[camera]) = 1;
+			//cout<< projVoxels[v]->camera_projection[camera].x << endl;
+			//cout<< projVoxels[v]->camera_projection[camera].y << endl;
+			//mask.at<int>(projVoxels[v]->camera_projection[camera].x+1,projVoxels[v]->camera_projection[camera].y) = 1;
 			//mask.at<int>(projVoxels[v]->camera_projection[camera].y+1,projVoxels[v]->camera_projection[camera].x-1) = 1;
 			//mask.at<int>(projVoxels[v]->camera_projection[camera].y+1,projVoxels[v]->camera_projection[camera].x+1) = 1;
-			mask.at<int>(projVoxels[v]->camera_projection[camera].y,projVoxels[v]->camera_projection[camera].x-1) = 1;
-			mask.at<int>(projVoxels[v]->camera_projection[camera].y,projVoxels[v]->camera_projection[camera].x+1) = 1;
-			mask.at<int>(projVoxels[v]->camera_projection[camera].y-1,projVoxels[v]->camera_projection[camera].x) = 1;
+			//mask.at<int>(projVoxels[v]->camera_projection[camera].x,projVoxels[v]->camera_projection[camera].y-1) = 1;
+			//mask.at<int>(projVoxels[v]->camera_projection[camera].x,projVoxels[v]->camera_projection[camera].y+1) = 1;
+			//mask.at<int>(projVoxels[v]->camera_projection[camera].x-1,projVoxels[v]->camera_projection[camera].y) = 1;
 			//mask.at<int>(projVoxels[v]->camera_projection[camera].y-1,projVoxels[v]->camera_projection[camera].x-1) = 1;
 			//mask.at<int>(projVoxels[v]->camera_projection[camera].y-1,projVoxels[v]->camera_projection[camera].x+1) = 1;
 		}
