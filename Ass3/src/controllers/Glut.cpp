@@ -1095,7 +1095,7 @@ vector<Point2f> Glut::calculateSubjectCenters(vector<Mat> cModels){
 				int y = voxels[i] -> camera_projection[camNr].y;
 
 				//if so, get the closest colormodel and label the voxel
-				voxels[i]->label= Glut::getClosestModel(cModels, getScene3d().getCameras()[camNr] -> getVideoFrame(currentFrame));;
+				voxels[i]->label= Glut::getClosestModel(cModels, getScene3d().getCameras()[camNr] -> getVideoFrame(currentFrame).at<cv::Mat>(y,x));;
 			}
 		}
 	}
