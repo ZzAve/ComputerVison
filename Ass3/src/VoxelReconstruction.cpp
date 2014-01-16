@@ -185,7 +185,7 @@ vector<int> VoxelReconstruction::getBestHsv(Camera *cam,Scene3DRenderer scene, M
 vector<int> VoxelReconstruction::determine_best_hsv(vector<Camera *> cams,Scene3DRenderer render)
 {
 	
-	int i,j,k;
+	//int i,j,k;
 	Mat photoshoped, photoshoped2;
     photoshoped = imread("photoshoped.jpg", CV_LOAD_IMAGE_COLOR);
 	//cvtColor(photoshoped,photoshoped2,CV_8U);

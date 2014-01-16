@@ -1077,43 +1077,47 @@ Mat Glut::getColorModel(Mat image,vector<Point2f> targetPoints)
     return hist;
 }
 
-void trackSubjects(vector<Mat> cModels){
+vector<Point2f> Glut::calculateSubjectCenters(vector<Mat> cModels){
 
 	//reproject all voxels back to cameras
-	Mat labels;
-	vector<vector<vector<Point2f>>> imgPoints;
-
-	//imgPoints = getScene3d().getReconstructor().reprojectVoxels(labels);
+	vector<Reconstructor::Voxel*> voxels =_glut->getScene3d().getReconstructor().getProjectableVoxels();
+	vector<Reconstructor::Voxel*> labeledVoxels;
+	vector<Point2f> centers;
+	int currentFrame = getScene3d().getCurrentFrame();
 
 	//for each view, dertermine the closest label
-	
-	vector<Point3f> resultViews;
-	for (int c=0;c<imgPoints.size();c++)
-	{
-		for (int label=0; label<imgPoints[c].size();label++)
-		{
-			for (int pnt=0; pnt<imgPoints[c][label].size();pnt++)
-			{
-			//	 int currentFrame = getScene3d().getCameras()[c] -> getCurrentFrame();
-				 int x = imgPoints[c][label][pnt].x;
-				 int y = imgPoints[c][label][pnt].y;
-			//	 float closestLabel = getClosestModel(cModels, getScene3d().getCameras()[c] -> VideoFrame(currentFrame)[x][y]);
-				 //resultViews[c].push_back(Point3f(0,0,closestLabel));
+	for (int i = 0; i < voxels.size(); i ++){
+		
+		for (int camNr = 0; camNr < 4; camNr++){
+
+			if(voxels[i]->valid_camera_projection[camNr]==1){
+
+				int x = voxels[i] -> camera_projection[camNr].x;
+				int y = voxels[i] -> camera_projection[camNr].y;
+
+				voxels[i]->label= Glut::getClosestModel(cModels, getScene3d().getCameras()[camNr] -> getVideoFrame(currentFrame));;
 			}
-			
 		}
 	}
 
-	//project back to voxels in order to label them
+	//determine center for each label
+	vector<int> elementCount;
+	for(int i = 0 ; i < voxels.size(); i++) {
 
-	//determine centers for each label
+		centers[voxels[i] -> label] += Point2f(voxels[i] -> x,voxels[i]->y);
+		elementCount[i]++;
+	}
+
+	for(int i = 0; i < cModels.size(); i++){
+
+		centers[i] = Point2f(centers[i].x/elementCount[i],centers[i].y/elementCount[i]);
+	}
 
 	//return centers
-
-
+	return centers;
 }
 
-float getClosestModel(vector<Mat> cModels,cv::Mat inputColor){
+int Glut::getClosestModel(vector<Mat> cModels,cv::Mat inputColor){
 
 	//TODO compare inputColor to cModels
 	Mat inputHSV;
