@@ -188,29 +188,31 @@ void Glut::mainLoopWindows()
 	update(0);
 	display();
 	//Get correct frame
-	int frame = 306;
-	getScene3d().setCurrentFrame(frame);
+	int frameNr = 306;
+	getScene3d().setCurrentFrame(frameNr);
 
 	//perform kmeans to get 4 clusters
-	Mat centers, labels;
-	centers = getScene3d().getReconstructor().calculatekMeans(labels);
-
-	//project voxels back on view
-	vector<vector<vector<Point2f>>> imgPoints;
-	imgPoints = getScene3d().getReconstructor().reprojectVoxels(labels);
+	Mat centers;
+	centers = getScene3d().getReconstructor().calculatekMeans();
 	
-	Mat hist;Scalar meann;
-	vector<vector<Mat>> histOverview(imgPoints.size());
-	for (int c=0;c<imgPoints.size();c++)
+	Scalar meann; 
+	Mat frame, imagePoints;
+	
+	//Mat hist;
+	//vector<vector<Mat>> histOverview(imgPoints.size());
+	//cout<<"imgPoints.size(): " <<imgPoints.size()<<endl;
+	for (int c=0;c<4;c++)
 	{
-		for (int label=0; label<imgPoints[c].size();label++)
+		frame = getScene3d().getCameras()[c] -> getVideoFrame(frameNr);
+		imagePoints = getScene3d().getReconstructor().reprojectVoxels2(frame,c);
+		cout<<"imagePoints.size(): " <<imagePoints.size()<<endl;
+		for (int label=0; label<4;label++)
 		{
-			cout<<"NR :  "<<c<<label<< "   ";
-			meann = getColorModelMean(getScene3d().getCameras()[c] -> getVideoFrame(frame),imgPoints[c][label]);
+			cout<<"NR :  "<<c<<" "<<label<< "   ";
+			meann = getColorModelMean(frame,imagePoints,c,label);
 			
 			//hist = getColorModel(getScene3d().getCameras()[c] -> getVideoFrame(frame),imgPoints[c][label]);
 			//histOverview[c].push_back(hist);
-			
 		}
 	}
 	
@@ -849,7 +851,7 @@ void Glut::drawVoxels()
 	glPushMatrix();
 	glTranslatef(0, 0, 0);
 	Mat labels, centers;
-	centers = _glut->getScene3d().getReconstructor().calculatekMeans(labels);
+	centers = _glut->getScene3d().getReconstructor().calculatekMeans();
 	for (int i =0;i<centers.rows;i++)
 	{
 		glBegin(GL_LINES);
@@ -869,9 +871,9 @@ void Glut::drawVoxels()
 	vector<Reconstructor::Voxel*> voxels = _glut->getScene3d().getReconstructor().getVisibleVoxels();
 
 	
-	for (size_t v = 0; v < voxels.size(); v++)
+	for (int v = 0; v < voxels.size(); v++)
 	{			
-		int color = labels.at<int>(v);
+		int color = voxels[v]->label;
 		// USE COLOR TO DRAW THE VOXEL ACCORDING TO A CERTAIN COLOR!
 		//Colors
 		if (color == 3)
@@ -959,20 +961,54 @@ void Glut::drawInfo()
 
 
 
-Scalar Glut::getColorModelMean(Mat image, vector<Point2f> targetPoints)
+Scalar Glut::getColorModelMean(Mat &image, Mat &targetPoints,int camera, int label)
 {
+
+	vector<Reconstructor::Voxel*> projVoxels =_glut->getScene3d().getReconstructor().getProjectableVoxels();
+	
 	Mat hsv;
 	cvtColor(image,hsv,CV_BGR2HSV);
-
 	Mat mask(hsv.size(),CV_8U);
-	mask = (Scalar(0));
+	mask= int(0);
+	for(size_t v=0;v<projVoxels.size();v++)
+	{
+		if (projVoxels[v]->label == label)
+		{
+			mask.at<int>(projVoxels[v]->camera_projection[camera].y,projVoxels[v]->camera_projection[0].x) = 1;
+			
+			mask.at<int>(projVoxels[v]->camera_projection[camera].y+1,projVoxels[v]->camera_projection[camera].x) = 1;
+			//mask.at<int>(projVoxels[v]->camera_projection[camera].y+1,projVoxels[v]->camera_projection[camera].x-1) = 1;
+			//mask.at<int>(projVoxels[v]->camera_projection[camera].y+1,projVoxels[v]->camera_projection[camera].x+1) = 1;
+			mask.at<int>(projVoxels[v]->camera_projection[camera].y,projVoxels[v]->camera_projection[camera].x-1) = 1;
+			mask.at<int>(projVoxels[v]->camera_projection[camera].y,projVoxels[v]->camera_projection[camera].x+1) = 1;
+			mask.at<int>(projVoxels[v]->camera_projection[camera].y-1,projVoxels[v]->camera_projection[camera].x) = 1;
+			//mask.at<int>(projVoxels[v]->camera_projection[camera].y-1,projVoxels[v]->camera_projection[camera].x-1) = 1;
+			//mask.at<int>(projVoxels[v]->camera_projection[camera].y-1,projVoxels[v]->camera_projection[camera].x+1) = 1;
+		}
+	}
 
-	for (int i=0;i<targetPoints.size();i++)
-		mask.at<int>(targetPoints[i].x,targetPoints[i].y) = 1;
+	
+	cout<<"Get Color Model ";
+	imshow("Image without mask",hsv);
+	Mat hsvMasked;
+	hsv.copyTo(hsvMasked,mask);
+	imshow("Image with mask",hsvMasked);
+	
+	cout<<"Get mean color ";
+	Scalar meanColor = mean(hsv);
+	Scalar meanColorM = mean(hsv,mask);
+	cout<< "Mean color (unmasked) : "<<meanColor<< " (masked) : "<< meanColorM<<endl;
+	
+	// draw mean color on image
+	rectangle(hsv,Point(0,0),Point(100.0,100.0),meanColor,CV_FILLED);
+	imshow("Image without mask",hsv);
+	rectangle(hsvMasked,Point(0,0),Point(100.0,100.0),meanColor,CV_FILLED);
+	imshow("Image with mask",hsvMasked);
 
-	Scalar meann = mean(image,mask);
-	cout<< "meann is: "<<meann<<endl;
-	return meann;
+	cout<< " |. ";
+	waitKey();
+	return meanColorM;
+	
 }
 
 //getColorModel

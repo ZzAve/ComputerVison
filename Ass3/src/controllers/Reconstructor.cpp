@@ -96,7 +96,7 @@ void Reconstructor::initialize()
 				voxel->x = x;
 				voxel->y = y;
 				voxel->z = z;
-				voxel->color = -1;
+				voxel->label = -1;
 				voxel->camera_projection = vector<Point>(_cameras.size());
 				voxel->valid_camera_projection = vector<int>(_cameras.size(), 0);
 
@@ -177,10 +177,10 @@ void Reconstructor::update()
 /* calculatekMeans, clusters the currently visible voxels, based upon the top view, 
 	meaning that only x and y coordinates are considered.
 */
-Mat Reconstructor::calculatekMeans(Mat &bestLabels)
+Mat Reconstructor::calculatekMeans()
 {
 	vector<Voxel*> visVox = getVisibleVoxels();
-	Mat points;
+	Mat points, bestLabels;
 	double x,y;
 	for (int i=0;i<visVox.size();i++)
 	{
@@ -204,35 +204,46 @@ Mat Reconstructor::calculatekMeans(Mat &bestLabels)
 	//Perform kMeans
 	kmeans(points,4,bestLabels,criteria,100,flags,kCenters);
 	
-	// sort the labels based on the centers
-	/*
-	Mat sortedCenters;
-	sortIdx(kCenters,sortedCenters,CV_SORT_EVERY_COLUMN+CV_SORT_ASCENDING);
 
-	for (int labelIndex=0; labelIndex<bestLabels.size().height; labelIndex++)
+	for (size_t v=0;v<visVox.size();v++)
 	{
-		Point2f center = kCenters.at<Point2f>(bestLabels.at<int>(labelIndex));
-		for (int i=1; i<sortedCenters.size().height;i++)
-		{
-			if (center.x == sortedCenters.at<Point2f>(i).x && center.y == sortedCenters.at<Point2f>(i).y)
-			{
-				cout<<"Here too"<<endl;
-				bestLabels.at<int>(labelIndex)=i;
-				break;
-			}
-		}
-	}*/
+		visVox[v] ->label = bestLabels.at<int>(v);
+	}
+	setVisibleVoxels(visVox);
+
 	return kCenters;
 }
 
 
 vector<vector<vector<Point2f>>> Reconstructor::reprojectVoxels(Mat labels)
 {
+	cout<<"Reprojecting voxels"<<endl;
 	// if points with the same coordinates, only take the one that is closest
 	vector<Voxel*> voxels = getVisibleVoxels();
-	int bx,by,kx,ky;
-	Point3f camlocation;
-	float distBase, distK;
+	//int bx,by,kx,ky;
+	//Point3f camlocation;
+	//float distBase, distK;
+	
+	vector<vector<vector<Point2f>>> imgPoints(voxels[0] ->camera_projection.size());
+	vector<vector<Point2f>> points(4); //  4 lists, for every label one.
+	for (int c=0; c<voxels[0]->camera_projection.size();c++)
+	{
+		cout<<"Checking cam "<<c<<endl;
+		// set all entries
+		for (int base=0; base<voxels.size();base++)
+		{
+			cout<<" Put at: points["<<labels.at<int>(base)<<"].push_back( "<<voxels[base] -> camera_projection[c]<<" )"<<endl;
+			points[labels.at<int>(base)].push_back( voxels[base] -> camera_projection[c] );
+		}
+		imgPoints[c]=points;
+		cout<<"Put at imgPoints["<<c<<"]"<<endl;
+		cout<<endl;
+	}
+
+	// bad way is done
+	return imgPoints;
+
+	/*
 	//check each view
 	for (int c=0; c<voxels[0]->camera_projection.size();c++)
 	{
@@ -243,7 +254,7 @@ vector<vector<vector<Point2f>>> Reconstructor::reprojectVoxels(Mat labels)
 			{
 				for (int k=base+1; k<voxels.size(); k++)
 				{
-					if (voxels[k]->valid_camera_projection[c] ==1)
+					if (voxels[k]->valid_camera_projection[c] ==1 && voxels[base]->valid_camera_projection[c]==1)
 					{
 						//compare the two voxel projections
 						bx = (voxels[base] -> camera_projection[c]).x;
@@ -256,7 +267,7 @@ vector<vector<vector<Point2f>>> Reconstructor::reprojectVoxels(Mat labels)
 							//two equal points. Now include the one closest to the camera
 							// get camera c
 							// get distances
-							 camlocation = getCameras()[c] -> getCameraLocation();
+							camlocation = getCameras()[c] -> getCameraLocation();
 							
 							distBase = (camlocation.x - voxels[base]->z )*(camlocation.x - voxels[base]->z )+
 							(camlocation.y - voxels[base]->y )*(camlocation.y - voxels[base]->y )+
@@ -290,6 +301,64 @@ vector<vector<vector<Point2f>>> Reconstructor::reprojectVoxels(Mat labels)
 	}
 	
 	return imgPoints;
+	*/
+}
+
+Mat Reconstructor::reprojectVoxels2(Mat &frame, int camera)
+{
+	cout<<"Reprojecting voxels";
+	
+	setProjectableVoxels(getVisibleVoxels());
+	return Mat();
+	/*
+	vector<Voxel*> voxels = getVisibleVoxels();
+	Point3f camLoc = getCameras()[camera]->getCameraLocation();
+
+	float distCur, distNew;
+	Voxel* voxCur;
+	Voxel* voxNew;
+	
+	Mat imgRepr(frame.size(),CV_8U);
+	imgRepr = int(0);
+	
+	for (int base=0; base<voxels.size();base++)
+	{		
+		
+		//check if image projection is already present
+		Point2f projection = voxels[base] ->camera_projection[camera];
+		int projctnEntry = imgRepr.at<int>(projection.x,projection.y);
+		
+		if (projctnEntry == 0)
+		{
+			// if pixel is not present yet,
+			// set voxel index at pixelPosition of imgRepr
+			//projctnEntry = base;
+			imgRepr.at<int>(projection.x,projection.y) = 1;
+		} else 
+		{
+			// if pixel is present, 
+			// Compare the voxeldistance that created that pixel with
+			// the voxel distance. 
+			cout<<" "<<base<<" ProjctEntry: "<<projctnEntry<<endl;
+			voxCur = voxels[projctnEntry];
+			voxNew = voxels[base];
+
+			distCur = sqrt((camLoc.x - voxCur->x)*(camLoc.x - voxCur->x)  + (camLoc.y - voxCur->y)*(camLoc.y - voxCur->y)
+				+ (camLoc.z - voxCur->z)*(camLoc.z - voxCur->z));
+			distNew = sqrt((camLoc.x - voxCur->x)*(camLoc.x - voxCur->x)  + (camLoc.y - voxCur->y)*(camLoc.y - voxCur->y) 
+				+ (camLoc.z - voxCur->z)*(camLoc.z - voxCur->z));
+		
+			// if distance of new pixel has a voxel that was closer, replace the entry
+			if (distNew < distCur) { 
+				imgRepr.at<int>(projection.x,projection.y) = base+1;	
+			}
+		}
+	}
+	
+	//cout<<"ImgRepr after : " <<endl<<imgRepr<<endl;
+	// bad way is done
+	cout<< ". . done!"<<endl;
+	return imgRepr;*/
 }
 
 } /* namespace nl_uu_science_gmt */
