@@ -21,7 +21,7 @@ public:
 	struct Voxel
 	{
 		int x, y, z;
-		int color;
+		int label;
 		std::vector<cv::Point> camera_projection;
 		std::vector<int> valid_camera_projection;
 	};
@@ -39,6 +39,7 @@ private:
 
 	std::vector<Voxel*> _voxels;
 	std::vector<Voxel*> _visible_voxels;
+	std::vector<Voxel*> _projectable_voxels;
 
 	void initialize();
 
@@ -47,11 +48,18 @@ public:
 	virtual ~Reconstructor();
 
 	void update();
-	cv::Mat calculatekMeans(cv::Mat &);
+	cv::Mat calculatekMeans();
 	std::vector<std::vector<std::vector<cv::Point2f>>> reprojectVoxels(cv::Mat);
+	cv::Mat reprojectVoxels2(cv::Mat &, int);
+
 	const std::vector<Voxel*>& getVisibleVoxels() const
 	{
 		return _visible_voxels;
+	}
+
+	const std::vector<Voxel*>& getProjectableVoxels() const
+	{
+		return _projectable_voxels;
 	}
 
 	const std::vector<Voxel*>& getVoxels() const
@@ -59,14 +67,23 @@ public:
 		return _voxels;
 	}
 
+	const int getLabel(int VoxelId) const
+	{
+		return _visible_voxels[VoxelId] ->label;
+	}
 	void setVisibleVoxels(const std::vector<Voxel*>& visibleVoxels)
 	{
 		_visible_voxels = visibleVoxels;
 	}
 
-	void setColor(int voxelId, int colorId)
+	void setProjectableVoxels(const std::vector<Voxel*>& projectableVoxels)
+	{
+		_projectable_voxels = projectableVoxels;
+	}
+	
+	void setLabel(int voxelId, int colorId)
 	{ 
-		_visible_voxels[voxelId] -> color = colorId;
+		_visible_voxels[voxelId] -> label = colorId;
 	}
 
 	void setVoxels(const std::vector<Voxel*>& voxels)

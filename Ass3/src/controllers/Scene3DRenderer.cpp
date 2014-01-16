@@ -22,7 +22,7 @@ Scene3DRenderer::Scene3DRenderer(Reconstructor &r, const vector<Camera*> &cs) :
 	_width = 640;
 	_height = 480;
 	_quit = false;
-	_paused = false;
+	_paused = true;
 	_rotate = false;
 	_camera_view = true;
 	_show_volume = true;

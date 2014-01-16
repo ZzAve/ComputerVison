@@ -21,12 +21,12 @@ const Size board_size = Size(nrHorizontalCorners,nrVerticalCorners);
 int imgCount =0;
 
 String videoPath;
-String camNr = "3";
+String camNr = "2";
 String camPath = "../data/cam";
 String imgName = "calibrationImg";
 String imgExt = ".jpg";
 int startNr= 0;
-int endNr = 73;
+int endNr = 115;
 
 /*
 *Class Line, is an extension of the already existing class line. Upon creation, the img 
@@ -556,7 +556,6 @@ int main()
 	String filename="intrinsics"+camPath+camNr+"txt";
 	intr.open(filename);
 	for (int i=0; i<intrinsic.size().height;i++){
-
 		for (int j=0; j<intrinsic.size().width;j++){
 			intr << intrinsic.at<double>(i,j) << "\t";
 		}
