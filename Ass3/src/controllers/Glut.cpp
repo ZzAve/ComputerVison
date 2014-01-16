@@ -1081,20 +1081,20 @@ vector<Point2f> Glut::calculateSubjectCenters(vector<Mat> cModels){
 
 	//reproject all voxels back to cameras
 	vector<Reconstructor::Voxel*> voxels =_glut->getScene3d().getReconstructor().getProjectableVoxels();
-	vector<Reconstructor::Voxel*> labeledVoxels;
 	vector<Point2f> centers;
 	int currentFrame = getScene3d().getCurrentFrame();
 
-	//for each view, dertermine the closest label
+	//for each voxel, dertermine the closest label
 	for (int i = 0; i < voxels.size(); i ++){
 		
 		for (int camNr = 0; camNr < 4; camNr++){
 
-			if(voxels[i]->valid_camera_projection[camNr]==1){
+			if(voxels[i]->valid_camera_projection[camNr]==1){ //check if voxel is visible from this cam
 
 				int x = voxels[i] -> camera_projection[camNr].x;
 				int y = voxels[i] -> camera_projection[camNr].y;
 
+				//if so, get the closest colormodel and label the voxel
 				voxels[i]->label= Glut::getClosestModel(cModels, getScene3d().getCameras()[camNr] -> getVideoFrame(currentFrame));;
 			}
 		}
