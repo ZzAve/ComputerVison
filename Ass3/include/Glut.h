@@ -59,7 +59,7 @@ public:
 	virtual ~Glut();
 	cv::Mat getColorModel(cv::Mat,int,int);
 	cv::Scalar getColorModelMean(cv::Mat &,cv::Mat&,int,int);
-	cv::vector<cv::Point2f> calculateSubjectCenters(cv::vector<cv::Mat>);
+	void calculateSubjectCenters(cv::vector<cv::Mat>);
 	int getClosestModel(cv::vector<cv::Mat>,cv::Mat);
 
 #ifdef __linux__

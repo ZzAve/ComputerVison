@@ -177,7 +177,7 @@ void Reconstructor::update()
 /* calculatekMeans, clusters the currently visible voxels, based upon the top view, 
 	meaning that only x and y coordinates are considered.
 */
-Mat Reconstructor::calculatekMeans()
+void Reconstructor::calculatekMeans()
 {
 	vector<Voxel*> visVox = getVisibleVoxels();
 	Mat points, bestLabels;
@@ -193,7 +193,7 @@ Mat Reconstructor::calculatekMeans()
 	//Apply KMeans
 	//double kmeans(InputArray data, int K, InputOutputArray bestLabels, 
 	//				TermCriteria criteria, int attempts, int flags, OutputArray centers=noArray() )
-	Mat kCenters;
+	vector<Point2f> kCenters(4);
 
 	//Define criteria = ( type, max_iter = 10 , epsilon = 1.0 )
 	TermCriteria criteria = TermCriteria( CV_TERMCRIT_EPS+CV_TERMCRIT_ITER, 10, 1.0);
@@ -202,7 +202,13 @@ Mat Reconstructor::calculatekMeans()
 	int flags = KMEANS_RANDOM_CENTERS;
 
 	//Perform kMeans
-	kmeans(points,4,bestLabels,criteria,100,flags,kCenters);
+	Mat tempCenters;
+	kmeans(points,4,bestLabels,criteria,100,flags,tempCenters);
+	
+	for (int i =0; i < tempCenters.size().height; i++)
+	{
+		kCenters[i]=Point2f(tempCenters.at<float>(i,0),tempCenters.at<float>(i,1));
+	}
 	
 
 	for (size_t v=0;v<visVox.size();v++)
@@ -211,7 +217,7 @@ Mat Reconstructor::calculatekMeans()
 	}
 	setVisibleVoxels(visVox);
 
-	return kCenters;
+	setCenters(kCenters);
 }
 
 

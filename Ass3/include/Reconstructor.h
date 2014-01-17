@@ -41,6 +41,8 @@ private:
 	std::vector<Voxel*> _visible_voxels;
 	std::vector<Voxel*> _projectable_voxels;
 
+	std::vector<cv::Point2f> _centers;
+
 	void initialize();
 
 public:
@@ -48,7 +50,7 @@ public:
 	virtual ~Reconstructor();
 
 	void update();
-	cv::Mat calculatekMeans();
+	void calculatekMeans();
 	std::vector<std::vector<std::vector<cv::Point2f>>> reprojectVoxels(cv::Mat);
 	cv::Mat reprojectVoxels2(cv::Mat &, int);
 
@@ -91,6 +93,14 @@ public:
 		_voxels = voxels;
 	}
 	
+	void setCenters(const std::vector<cv::Point2f> centers)
+	{
+		_centers = centers;
+	}
+	std::vector<cv::Point2f> getCenters()
+	{
+		return _centers;
+	}
 	const std::vector<cv::Point3f*>& getCorners() const
 	{
 		return _corners;
@@ -109,6 +119,10 @@ public:
 	const std::vector<Camera*>& getCameras()
 	{
 		return _cameras;
+	}
+	const void initCenters()
+	{
+		_centers.resize(4);
 	}
 };
 
