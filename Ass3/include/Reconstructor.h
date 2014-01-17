@@ -52,7 +52,8 @@ public:
 	void update();
 	void calculatekMeans();
 	std::vector<std::vector<std::vector<cv::Point2f>>> reprojectVoxels(cv::Mat);
-	cv::Mat reprojectVoxels2(cv::Mat &, int,int b=1);
+	cv::Mat reprojectVoxels2(cv::Mat &, int,int);
+	cv::Mat reprojectVoxels2(cv::Mat &, int);
 
 	const std::vector<Voxel*>& getVisibleVoxels() const
 	{

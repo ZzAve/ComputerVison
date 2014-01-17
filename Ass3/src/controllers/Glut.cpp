@@ -1042,11 +1042,11 @@ Mat Glut::getColorModel(Mat image,int camera, int label)
 		}
 	}
 
-	cout<<"Get Color Model ";
-	imshow("Image without mask",hsv);
-	Mat hsvMasked;
-	hsv.copyTo(hsvMasked,mask);
-	imshow("Image with mask",hsvMasked);
+	//cout<<"Get Color Model ";
+	//imshow("Image without mask",hsv);
+	// hsvMasked;
+	//hsv.copyTo(hsvMasked,mask);
+	//imshow("Image with mask",hsvMasked);
 	
 	 // Quantize the hue to 30 levels
     // and the saturation to 32 levels
@@ -1088,13 +1088,13 @@ Mat Glut::getColorModel(Mat image,int camera, int label)
                         CV_FILLED );
         }
 
-	namedWindow( "Source", 1 );
-    imshow( "Source", image );
+	//namedWindow( "Source", 1 );
+    //imshow( "Source", image );
 
-    namedWindow( "H-S Histogram", 1 );
-    imshow( "H-S Histogram", histImg );
+   // namedWindow( "H-S Histogram", 1 );
+    //imshow( "H-S Histogram", histImg );
 	
-	cout << "histogram voor label "<< label << endl;	
+	//cout << "histogram voor label "<< label << endl;	
 	
     return hist;
 }
@@ -1102,7 +1102,7 @@ Mat Glut::getColorModel(Mat image,int camera, int label)
 void Glut::calculateSubjectCenters(vector<Mat> cModels){
 
 	//reproject all voxels back to cameras
-	vector<Reconstructor::Voxel*> voxels =_glut->getScene3d().getReconstructor().getVisibleVoxels();
+	vector<Reconstructor::Voxel*> voxels;
 	vector<float> centersx(4,0.0);
 	vector<float> centersy(4,0.0);
 	//int currentFrame = getScene3d().getCurrentFrame();
@@ -1110,20 +1110,25 @@ void Glut::calculateSubjectCenters(vector<Mat> cModels){
 	//for each voxel, dertermine the closest label
 	
 	for (int camNr = 0; camNr < 4; camNr++){
-
+			
+			voxels =_glut->getScene3d().getReconstructor().getProjectableVoxels(camNr);
 			Mat camFrame;
 			cvtColor(getScene3d().getCameras()[camNr] -> getFrame(),camFrame,CV_BGR2HSV);
 
 		for (int i = 0; i < voxels.size(); i ++){
 		
-			if(voxels[i]->valid_camera_projection[camNr]==1){ //check if voxel is visible from this cam
+			//if(voxels[i]->valid_camera_projection[camNr]==1){ //check if voxel is visible from this cam
 
 				//if so, get the closest colormodel and label the voxel
 				voxels[i]->label = getClosestModel(cModels, camFrame.at<Vec3b>(voxels[i] -> camera_projection[camNr]));
-			}
+			//}
 		}
+		getScene3d().getReconstructor().setProjectableVoxels(voxels,camNr);
 	}
 
+	display();
+	waitKey(100);
+	voxels = getScene3d().getReconstructor().getVisibleVoxels();
 	getScene3d().getReconstructor().setVisibleVoxels(voxels);
 
 	//determine center for each label

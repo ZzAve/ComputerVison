@@ -312,8 +312,11 @@ vector<vector<vector<Point2f>>> Reconstructor::reprojectVoxels(Mat labels)
 	*/
 }
 
-
-Mat Reconstructor::reprojectVoxels2(Mat &frame, int camera,int occlusionCheck=1)
+Mat Reconstructor::reprojectVoxels2(Mat &frame, int camera)
+{
+	return reprojectVoxels2(frame,camera,1);
+}
+Mat Reconstructor::reprojectVoxels2(Mat &frame, int camera,int occlusionCheck)
 {
 	cout<<"Reprojecting voxels for camera "<<camera<<endl;
 	
@@ -362,7 +365,7 @@ Mat Reconstructor::reprojectVoxels2(Mat &frame, int camera,int occlusionCheck=1)
 			}
 		} else if (occlusionCheck ==0 )
 		{
-			imgRepr[projection.x,projection.y] = base+1;
+			imgRepr[projection.x][projection.y] = base+1;
 		} else
 		{
 			//cout<<"Check neighbourhood";
