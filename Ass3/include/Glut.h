@@ -57,7 +57,7 @@ class Glut
 public:
 	Glut(Scene3DRenderer &);
 	virtual ~Glut();
-	cv::Mat getColorModel(cv::Mat,std::vector<cv::Point2f>);
+	cv::Mat getColorModel(cv::Mat,int,int);
 	cv::Scalar getColorModelMean(cv::Mat &,cv::Mat&,int,int);
 	cv::vector<cv::Point2f> calculateSubjectCenters(cv::vector<cv::Mat>);
 	int getClosestModel(cv::vector<cv::Mat>,cv::Mat);

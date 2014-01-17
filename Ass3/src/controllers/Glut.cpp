@@ -195,26 +195,22 @@ void Glut::mainLoopWindows()
 	Mat centers;
 	centers = getScene3d().getReconstructor().calculatekMeans();
 	
-	Scalar meann; 
+	Scalar meann;
+	vector<Mat> cModels(4);
 	Mat frame, imagePoints;
 	
-	//Mat hist;
-	//vector<vector<Mat>> histOverview(imgPoints.size());
-	//cout<<"imgPoints.size(): " <<imgPoints.size()<<endl;
-	for (int c=0;c<4;c++)
-	{
+	int c=3;
 		frame = getScene3d().getCameras()[c] -> getVideoFrame(frameNr);
 		imagePoints = getScene3d().getReconstructor().reprojectVoxels2(frame,c);
 		cout<<"imagePoints.size(): " <<imagePoints.size()<<endl;
 		for (int label=0; label<4;label++)
 		{
 			cout<<"NR :  "<<c<<" "<<label<< "   ";
-			meann = getColorModelMean(frame,imagePoints,c,label);
+			cModels[label] = getColorModel(frame,c,label);
 			
 			//hist = getColorModel(getScene3d().getCameras()[c] -> getVideoFrame(frame),imgPoints[c][label]);
 			//histOverview[c].push_back(hist);
 		}
-	}
 	
 	//cout<<"This is the histogram for 0 0: " << endl << hist<<endl;
 	//cout<<imgPoints[0]<<endl<<endl;
@@ -1018,16 +1014,28 @@ Scalar Glut::getColorModelMean(Mat &image, Mat &targetPoints,int camera, int lab
 // targetPoints contains a vectorlist of Point2f objects, 
 // given for a certain label and a certain view
 //
-Mat Glut::getColorModel(Mat image,vector<Point2f> targetPoints)
+Mat Glut::getColorModel(Mat image,int camera, int label)
 {
+
+	vector<Reconstructor::Voxel*> projVoxels =_glut->getScene3d().getReconstructor().getProjectableVoxels();
+	
 	Mat hsv;
-	cvtColor(image, hsv, CV_BGR2HSV);
-
+	cvtColor(image,hsv,CV_BGR2HSV);
 	Mat mask(hsv.size(),CV_8U);
-	mask = (Scalar(0));
+	mask= uchar(0);
+	for(size_t v=0;v<projVoxels.size();v++)
+	{
+		if (projVoxels[v]->label == 1)
+		{
+			mask.at<uchar>(projVoxels[v]->camera_projection[camera]) = 1;
+		}
+	}
 
-	for (int i=0;i<targetPoints.size();i++)
-		mask.at<int>(targetPoints[i].x,targetPoints[i].y) = 1;
+	cout<<"Get Color Model ";
+	imshow("Image without mask",hsv);
+	Mat hsvMasked;
+	hsv.copyTo(hsvMasked,mask);
+	imshow("Image with mask",hsvMasked);
 
 	 // Quantize the hue to 30 levels
     // and the saturation to 32 levels
@@ -1052,7 +1060,7 @@ Mat Glut::getColorModel(Mat image,vector<Point2f> targetPoints)
              false );
     
 	
-	/*double maxVal=0;
+	double maxVal=0;
     minMaxLoc(hist, 0, &maxVal, 0, 0);
 
     int scale = 10;
@@ -1073,7 +1081,10 @@ Mat Glut::getColorModel(Mat image,vector<Point2f> targetPoints)
     imshow( "Source", image );
 
     namedWindow( "H-S Histogram", 1 );
-    imshow( "H-S Histogram", histImg );*/
+    imshow( "H-S Histogram", histImg );
+	
+	
+	
     return hist;
 }
 
