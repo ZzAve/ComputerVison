@@ -202,7 +202,7 @@ void Glut::mainLoopWindows()
 	
 	int c=3;
 	frame = getScene3d().getCameras()[c] -> getFrame();
-	imagePoints = getScene3d().getReconstructor().reprojectVoxels2(frame,c);
+	imagePoints = getScene3d().getReconstructor().reprojectVoxels2(frame,c,0);
 	cout<<"imagePoints.size(): " <<imagePoints.size()<<endl;
 	for (int label=0; label<4;label++)
 	{
