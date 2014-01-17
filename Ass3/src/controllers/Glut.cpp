@@ -190,40 +190,39 @@ void Glut::mainLoopWindows()
 	//Get correct frame
 	int frameNr = 306;
 	getScene3d().setCurrentFrame(frameNr);
-
+	update(0);
 	//perform kmeans to get 4 clusters
 	Mat centers;
-	centers = getScene3d().getReconstructor().calculatekMeans();
+	getScene3d().getReconstructor().calculatekMeans();
 	
-	Scalar meann; 
+	//create color model based on clusters
+	Scalar meann;
+	vector<Mat> cModels(4);
 	Mat frame, imagePoints;
 	
-	//Mat hist;
-	//vector<vector<Mat>> histOverview(imgPoints.size());
-	//cout<<"imgPoints.size(): " <<imgPoints.size()<<endl;
-	for (int c=0;c<4;c++)
+	int c=3;
+	frame = getScene3d().getCameras()[c] -> getFrame();
+	imagePoints = getScene3d().getReconstructor().reprojectVoxels2(frame,c);
+	cout<<"imagePoints.size(): " <<imagePoints.size()<<endl;
+	for (int label=0; label<4;label++)
 	{
-		frame = getScene3d().getCameras()[c] -> getVideoFrame(frameNr);
-		imagePoints = getScene3d().getReconstructor().reprojectVoxels2(frame,c);
-		cout<<"imagePoints.size(): " <<imagePoints.size()<<endl;
-		for (int label=0; label<4;label++)
-		{
-			cout<<"NR :  "<<c<<" "<<label<< "   ";
-			meann = getColorModelMean(frame,imagePoints,c,label);
-			
-			//hist = getColorModel(getScene3d().getCameras()[c] -> getVideoFrame(frame),imgPoints[c][label]);
-			//histOverview[c].push_back(hist);
-		}
+		cout<<"NR :  "<<c<<" "<<label<< "   ";
+		cModels[label] = getColorModel(frame,c,label);
 	}
 	
-	//create color model based on clusters	
 
 	//Then go!
 
+	//reset current frame to 0
+	getScene3d().setCurrentFrame(0);
 
 	while(!_glut->getScene3d().isQuit())
 	{
+		// get the centers based on cModels
+		
 		update(0);
+		calculateSubjectCenters(cModels);
+
 		display();
 	}
 }
@@ -844,23 +843,27 @@ void Glut::drawVoxels()
 {
 	glPushMatrix();
 	glTranslatef(0, 0, 0);
-	Mat labels, centers;
-	centers = _glut->getScene3d().getReconstructor().calculatekMeans();
-	for (int i =0;i<centers.rows;i++)
+	//Mat labels, centers;
+	//centers = _glut->getScene3d().getReconstructor().calculatekMeans();
+
+	vector<Point2f> centers = _glut -> getScene3d().getReconstructor().getCenters();
+
+
+	for (int i =0;i<centers.size();i++)
 	{
 		glBegin(GL_LINES);
 		glColor4f(0.5f,0.5f,0.5f,0.5f);
 		glLineWidth(2.0f);
-		glVertex3f((GLfloat) centers.at<float>(i,0), (GLfloat) centers.at<float>(i,1), 0.0);
-		glVertex3f((GLfloat) centers.at<float>(i,0), (GLfloat) centers.at<float>(i,1), 3000.0);
+		glVertex3f((GLfloat) centers[i].x, (GLfloat) centers[i].y, 0.0);
+		glVertex3f((GLfloat) centers[i].x, (GLfloat)  centers[i].x, 3000.0);
 		glEnd();
 	}
-
 	// apply default translation
 	glTranslatef(0, 0, 0);
 	glPointSize(2.0f);
 	glBegin(GL_POINTS);
 
+	 
 
 	vector<Reconstructor::Voxel*> voxels = _glut->getScene3d().getReconstructor().getVisibleVoxels();
 
@@ -1012,17 +1015,29 @@ Scalar Glut::getColorModelMean(Mat &image, Mat &targetPoints,int camera, int lab
 // targetPoints contains a vectorlist of Point2f objects, 
 // given for a certain label and a certain view
 //
-Mat Glut::getColorModel(Mat image,vector<Point2f> targetPoints)
+Mat Glut::getColorModel(Mat image,int camera, int label)
 {
+
+	vector<Reconstructor::Voxel*> projVoxels =_glut->getScene3d().getReconstructor().getProjectableVoxels();
+	cout << getScene3d().getCurrentFrame() << endl;
 	Mat hsv;
-	cvtColor(image, hsv, CV_BGR2HSV);
-
+	cvtColor(image,hsv,CV_BGR2HSV);
 	Mat mask(hsv.size(),CV_8U);
-	mask = (Scalar(0));
+	mask= uchar(0);
+	for(size_t v=0;v<projVoxels.size();v++)
+	{
+		if (projVoxels[v]->label == label)
+		{
+			mask.at<uchar>(projVoxels[v]->camera_projection[camera]) = 1;
+		}
+	}
 
-	for (int i=0;i<targetPoints.size();i++)
-		mask.at<int>(targetPoints[i].x,targetPoints[i].y) = 1;
-
+	cout<<"Get Color Model ";
+	imshow("Image without mask",hsv);
+	Mat hsvMasked;
+	hsv.copyTo(hsvMasked,mask);
+	imshow("Image with mask",hsvMasked);
+	
 	 // Quantize the hue to 30 levels
     // and the saturation to 32 levels
     int hbins = 30, sbins = 32;
@@ -1046,7 +1061,7 @@ Mat Glut::getColorModel(Mat image,vector<Point2f> targetPoints)
              false );
     
 	
-	/*double maxVal=0;
+	double maxVal=0;
     minMaxLoc(hist, 0, &maxVal, 0, 0);
 
     int scale = 10;
@@ -1063,70 +1078,80 @@ Mat Glut::getColorModel(Mat image,vector<Point2f> targetPoints)
                         CV_FILLED );
         }
 
-   namedWindow( "Source", 1 );
+	namedWindow( "Source", 1 );
     imshow( "Source", image );
 
     namedWindow( "H-S Histogram", 1 );
-    imshow( "H-S Histogram", histImg );*/
+    imshow( "H-S Histogram", histImg );
+	
+	cout << "histogram voor label "<< label << endl;	
+	
     return hist;
 }
 
-vector<Point2f> Glut::calculateSubjectCenters(vector<Mat> cModels){
+void Glut::calculateSubjectCenters(vector<Mat> cModels){
 
 	//reproject all voxels back to cameras
-	vector<Reconstructor::Voxel*> voxels =_glut->getScene3d().getReconstructor().getProjectableVoxels();
-	vector<Point2f> centers;
-	int currentFrame = getScene3d().getCurrentFrame();
+	vector<Reconstructor::Voxel*> voxels =_glut->getScene3d().getReconstructor().getVisibleVoxels();
+	vector<float> centersx(4,0.0);
+	vector<float> centersy(4,0.0);
+	//int currentFrame = getScene3d().getCurrentFrame();
 
 	//for each voxel, dertermine the closest label
-	for (int i = 0; i < voxels.size(); i ++){
-		
-		for (int camNr = 0; camNr < 4; camNr++){
+	
+	for (int camNr = 0; camNr < 4; camNr++){
 
+			Mat camFrame;
+			cvtColor(getScene3d().getCameras()[camNr] -> getFrame(),camFrame,CV_BGR2HSV);
+
+		for (int i = 0; i < voxels.size(); i ++){
+		
 			if(voxels[i]->valid_camera_projection[camNr]==1){ //check if voxel is visible from this cam
 
-				int x = voxels[i] -> camera_projection[camNr].x;
-				int y = voxels[i] -> camera_projection[camNr].y;
-
 				//if so, get the closest colormodel and label the voxel
-				voxels[i]->label= Glut::getClosestModel(cModels, getScene3d().getCameras()[camNr] -> getVideoFrame(currentFrame).at<cv::Mat>(y,x));;
+				voxels[i]->label = getClosestModel(cModels, camFrame.at<Vec3b>(voxels[i] -> camera_projection[camNr]));
 			}
 		}
 	}
 
+	getScene3d().getReconstructor().setVisibleVoxels(voxels);
+
 	//determine center for each label
-	vector<int> elementCount;
+	vector<float> elementCount(4,0.0);
 	for(int i = 0 ; i < voxels.size(); i++) {
 
-		centers[voxels[i] -> label] += Point2f(voxels[i] -> x,voxels[i]->y);
-		elementCount[i]++;
+		elementCount[voxels[i] -> label]++;
 	}
 
-	for(int i = 0; i < cModels.size(); i++){
 
-		centers[i] = Point2f(centers[i].x/elementCount[i],centers[i].y/elementCount[i]);
+	for(int i = 0; i < voxels.size(); i++){
+		centersx[voxels[i] -> label] += ((float)voxels[i]->x) / elementCount[voxels[i]->label];
+		centersy[voxels[i] -> label] += ((float)voxels[i]->y) / elementCount[voxels[i]->label];
 	}
 
+	vector<Point2f> centers(4);
+	centers[0] = Point2f(centersx[0],centersy[0]);
+	centers[1] = Point2f(centersx[1],centersy[1]);
+	centers[2] = Point2f(centersx[2],centersy[2]);
+	centers[3] = Point2f(centersx[3],centersy[3]);
+	cout <<"eerste center: " << centers[0] << endl;
 	//return centers
-	return centers;
+	_glut -> getScene3d().getReconstructor().setCenters(centers);
 }
 
-int Glut::getClosestModel(vector<Mat> cModels,cv::Mat inputColor){
+int Glut::getClosestModel(vector<Mat> cModels,cv::Vec3b inputColor){
 
-	//TODO compare inputColor to cModels
-	Mat inputHSV;
-	cvtColor( inputColor, inputHSV, CV_BGR2HSV );
-	int result=0;
-	double dist = 999999;
+	float max = 0.0;
+	int label = 0;
 
-	for (int i = 0 ; i<cModels.size();i++) {
-	//	if(dist > compareHist(cModels[i], inputHSV))
+	for (int i = 0; i<cModels.size(); i++)
+	{
+		if( max < cModels[i].at<float>(inputColor.val[0]/6,inputColor.val[1]/8))
 		{
-			result = i;
-	//		dist = compareHist(cModels[i], inputHSV);
+			label = i;
+			max = cModels[i].at<float>(inputColor.val[0]/6,inputColor.val[1]/8);
 		}
 	}
-
-	return result;
+	return label;
 }
 } /* namespace nl_uu_science_gmt */
