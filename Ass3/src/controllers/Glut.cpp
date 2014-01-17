@@ -1137,6 +1137,21 @@ void Glut::calculateSubjectCenters(vector<Mat> cModels){
 	cout <<"eerste center: " << centers[0] << endl;
 	//return centers
 	_glut -> getScene3d().getReconstructor().setCenters(centers);
+
+	for(int i = 0 ; i < voxels.size(); i++) {
+
+		float dist=sqrt((centersx[0]-voxels[i] ->x)*(centersx[0]-voxels[i] ->x) + (centersy[0]-voxels[i] ->y)*(centersy[0]-voxels[i] ->y));
+		voxels[i] -> label = 0;
+		for (int l = 1; l < centers.size(); l++)
+		{
+			if( dist > sqrt((centersx[l]-voxels[i] ->x)*(centersx[l]-voxels[i] ->x) + (centersy[l]-voxels[i] ->y)*(centersy[l]-voxels[i] ->y)))
+			{
+			voxels[i] -> label = l;
+			dist = sqrt((centersx[l]-voxels[i] ->x)*(centersx[l]-voxels[i] ->x) + (centersy[l]-voxels[i] ->y)*(centersy[l]-voxels[i] ->y));
+
+			}
+		}
+	}
 }
 
 int Glut::getClosestModel(vector<Mat> cModels,cv::Vec3b inputColor){
