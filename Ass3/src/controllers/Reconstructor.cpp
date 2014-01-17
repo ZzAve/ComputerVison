@@ -322,7 +322,7 @@ Mat Reconstructor::reprojectVoxels2(Mat &frame, int camera)
 	float distBase, distComp;
 	Voxel* voxBase;
 	Voxel* voxComp;
-	int neigh = 25;
+	float neigh = 25;
 	int iter;
 	vector<int> neighbour(neigh,0);
 	vector<int> dummy(frame.size().height,0);
