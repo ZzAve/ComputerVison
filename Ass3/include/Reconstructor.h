@@ -39,7 +39,7 @@ private:
 
 	std::vector<Voxel*> _voxels;
 	std::vector<Voxel*> _visible_voxels;
-	std::vector<Voxel*> _projectable_voxels;
+	std::vector<std::vector<Voxel*>> _projectable_voxels;
 
 	void initialize();
 
@@ -57,9 +57,13 @@ public:
 		return _visible_voxels;
 	}
 
+	const std::vector<Voxel*>& getProjectableVoxels(int camera) const
+	{
+		return _projectable_voxels[camera];
+	}
 	const std::vector<Voxel*>& getProjectableVoxels() const
 	{
-		return _projectable_voxels;
+		return _projectable_voxels[0];
 	}
 
 	const std::vector<Voxel*>& getVoxels() const
@@ -76,9 +80,9 @@ public:
 		_visible_voxels = visibleVoxels;
 	}
 
-	void setProjectableVoxels(const std::vector<Voxel*>& projectableVoxels)
+	void setProjectableVoxels(const std::vector<Voxel*>& projectableVoxels,int camera)
 	{
-		_projectable_voxels = projectableVoxels;
+		_projectable_voxels[camera] = projectableVoxels;
 	}
 	
 	void setLabel(int voxelId, int colorId)
@@ -109,6 +113,11 @@ public:
 	const std::vector<Camera*>& getCameras()
 	{
 		return _cameras;
+	}
+
+	const void initializeProjectableVoxels()
+	{
+		_projectable_voxels.resize(_cameras.size());
 	}
 };
 

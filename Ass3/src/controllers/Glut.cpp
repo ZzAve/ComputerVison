@@ -216,12 +216,6 @@ void Glut::mainLoopWindows()
 		}
 	}
 	
-	//cout<<"This is the histogram for 0 0: " << endl << hist<<endl;
-	//cout<<imgPoints[0]<<endl<<endl;
-	//cout<<imgPoints[1]<<endl<<endl;;
-	//cout<<imgPoints[2]<<endl<<endl;
-	//cout<<imgPoints[3]<<endl<<endl;
-	waitKey();
 	//create color model based on clusters	
 
 	//Then go!
@@ -964,12 +958,12 @@ void Glut::drawInfo()
 Scalar Glut::getColorModelMean(Mat &image, Mat &targetPoints,int camera, int label)
 {
 
-	vector<Reconstructor::Voxel*> projVoxels =_glut->getScene3d().getReconstructor().getProjectableVoxels();
+	vector<Reconstructor::Voxel*> projVoxels =_glut->getScene3d().getReconstructor().getProjectableVoxels(camera);
 	//cout << "number of projected voxels"<<projVoxels.size() << endl;
 	Mat hsv;
 	cvtColor(image,hsv,CV_BGR2HSV);
 	Mat mask(hsv.size(),CV_8U);
-	mask= int(0);
+	mask= uchar(0);
 	for(size_t v=0;v<projVoxels.size();v++)
 	{
 		if (projVoxels[v]->label == label)

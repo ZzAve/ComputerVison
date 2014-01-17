@@ -124,7 +124,7 @@ void Reconstructor::initialize()
 			}
 		}
 	}
-
+	initializeProjectableVoxels();
 	cout << "done!" << endl;
 }
 
@@ -306,59 +306,127 @@ vector<vector<vector<Point2f>>> Reconstructor::reprojectVoxels(Mat labels)
 
 Mat Reconstructor::reprojectVoxels2(Mat &frame, int camera)
 {
-	cout<<"Reprojecting voxels";
+	cout<<"Reprojecting voxels for camera "<<camera<<endl;
 	
-	setProjectableVoxels(getVisibleVoxels());
-	return Mat();
-	/*
 	vector<Voxel*> voxels = getVisibleVoxels();
 	Point3f camLoc = getCameras()[camera]->getCameraLocation();
-
-	float distCur, distNew;
-	Voxel* voxCur;
-	Voxel* voxNew;
-	
-	Mat imgRepr(frame.size(),CV_8U);
-	imgRepr = int(0);
-	
+	cout<<"Visible voxels: "<<voxels.size();
+	float distBase, distComp;
+	Voxel* voxBase;
+	Voxel* voxComp;
+	int neigh = 25;
+	int iter;
+	vector<int> neighbour(neigh,0);
+	vector<int> dummy(frame.size().height,0);
+	vector<vector<int>> imgRepr(frame.size().width,dummy);
+	cout<<"imgRepr.size() x imgRepr[0].size()  "<<imgRepr.size()<<" x "<<imgRepr[0].size()<<endl; 
+	cout<<"frame.size() "<< frame.size()<<endl;
 	for (int base=0; base<voxels.size();base++)
 	{		
 		
 		//check if image projection is already present
-		Point2f projection = voxels[base] ->camera_projection[camera];
-		int projctnEntry = imgRepr.at<int>(projection.x,projection.y);
+		Point projection = voxels[base] ->camera_projection[camera];
 		
-		if (projctnEntry == 0)
+		// check whether presented pixel is already present
+		if (imgRepr[projection.x][projection.y]!=0)
 		{
-			// if pixel is not present yet,
-			// set voxel index at pixelPosition of imgRepr
-			//projctnEntry = base;
-			imgRepr.at<int>(projection.x,projection.y) = 1;
-		} else 
-		{
-			// if pixel is present, 
-			// Compare the voxeldistance that created that pixel with
-			// the voxel distance. 
-			cout<<" "<<base<<" ProjctEntry: "<<projctnEntry<<endl;
-			voxCur = voxels[projctnEntry];
-			voxNew = voxels[base];
+			//cout<<"Replace? ";
+			//if so, put closest one at that position
+			voxBase = voxels[base];
+			distBase = sqrt((camLoc.x - voxBase->x)*(camLoc.x - voxBase->x)  + (camLoc.y - voxBase->y)*(camLoc.y - voxBase->y)
+						+ (camLoc.z - voxBase->z)*(camLoc.z - voxBase->z));
 
-			distCur = sqrt((camLoc.x - voxCur->x)*(camLoc.x - voxCur->x)  + (camLoc.y - voxCur->y)*(camLoc.y - voxCur->y)
-				+ (camLoc.z - voxCur->z)*(camLoc.z - voxCur->z));
-			distNew = sqrt((camLoc.x - voxCur->x)*(camLoc.x - voxCur->x)  + (camLoc.y - voxCur->y)*(camLoc.y - voxCur->y) 
-				+ (camLoc.z - voxCur->z)*(camLoc.z - voxCur->z));
-		
-			// if distance of new pixel has a voxel that was closer, replace the entry
-			if (distNew < distCur) { 
-				imgRepr.at<int>(projection.x,projection.y) = base+1;	
+			voxComp = voxels[imgRepr[projection.x][projection.y]-1];
+			distComp = sqrt((camLoc.x - voxComp->x)*(camLoc.x - voxComp->x)  + (camLoc.y - voxComp->y)*(camLoc.y - voxComp->y) 
+					+ (camLoc.z - voxComp->z)*(camLoc.z - voxComp->z));
+			if (distBase<distComp)
+			{
+				imgRepr[projection.x][projection.y]=base+1;
+				//cout<<"Yes!"<<endl;
+				//} else { cout<<"No"<<endl;
 			}
+		} else
+		{
+			//cout<<"Check neighbourhood";
+			//get neighbouring pixels
+			neighbour.assign(neigh,0);
+			for (int i=0;i<(int)sqrt(neigh);i++)
+			{
+				for (int j=0;j<(int)sqrt(neigh);j++)
+				{
+					if( (projection.x + (i-((int)sqrt(neigh)-2)) > 0) && (projection.x + (i-((int)sqrt(neigh)-2)) < imgRepr.size() ) 
+						&& (projection.y + (j-((int)sqrt(neigh)-2)) > 0) && (projection.y + (j-((int)sqrt(neigh)-2)) << imgRepr[0].size()) )
+					{
+						neighbour[(sqrt(neigh)*i)+j] = imgRepr[projection.x + (i-(sqrt(neigh)-2))][projection.y + (j-(sqrt(neigh)-2))];
+					}
+				}
+			}
+
+			voxBase = voxels[base];
+			distBase = sqrt((camLoc.x - voxBase->x)*(camLoc.x - voxBase->x)  + (camLoc.y - voxBase->y)*(camLoc.y - voxBase->y)
+						+ (camLoc.z - voxBase->z)*(camLoc.z - voxBase->z));
+			distComp = distBase + 10;
+			// check all entries subsequently
+			iter =-1;
+			while(distBase < distComp && iter<neigh)
+			{
+				iter++;
+			    //cout<< iter<<" ";
+				// skip self and 0 entries
+				if ( (iter != (neigh-1)/2) && (neighbour[iter] > 0) )
+				{ 
+					//check of current entry
+					voxComp = voxels[neighbour[iter]-1];
+
+					distComp = sqrt((camLoc.x - voxComp->x)*(camLoc.x - voxComp->x)  + (camLoc.y - voxComp->y)*(camLoc.y - voxComp->y) 
+						+ (camLoc.z - voxComp->z)*(camLoc.z - voxComp->z));
+				}
+			}
+
+			if (iter==neigh)
+			{
+				// This means that voxel base is closest, and should be projected. The others should not!
+				//cout<<" Closest! ";
+				for (int i=0;i<(int)sqrt(neigh);i++)
+				{
+					for (int j=0;j<(int)sqrt(neigh);j++)
+					{
+						if( (projection.x + (i-((int)sqrt(neigh)-2)) > 0) && (projection.x + (i-((int)sqrt(neigh)-2)) < imgRepr.size()) 
+							&& (projection.y + (j-((int)sqrt(neigh)-2)) > 0) && (projection.y + (j-((int)sqrt(neigh)-2)) << imgRepr[0].size()) )
+						{
+							imgRepr[projection.x + (i-((int)sqrt(neigh)-2))][projection.y + (j-((int)sqrt(neigh)-2))] = 0;
+						}
+					}
+				}
+				// Enter new pixel;
+				imgRepr[projection.x][projection.y] = base + 1;
+			}
+			//cout<<endl;
 		}
 	}
 	
-	//cout<<"ImgRepr after : " <<endl<<imgRepr<<endl;
-	// bad way is done
 	cout<< ". . done!"<<endl;
-	return imgRepr;*/
+	vector<Voxel*> repVoxels;
+	Mat mask(frame.size(),CV_8U);
+	mask = uchar(0);
+	//cout<<"mask "<<mask.size()<<endl;
+	cout<<"imgRepr" << imgRepr.size() << " x " << imgRepr[0].size()<<endl; 
+	for(int row = 0; row < imgRepr.size();row++) 
+	{
+		for(int col = 0; col < imgRepr[row].size(); col++) 
+		{
+			 if (imgRepr[row][col] != 0 )
+			 {
+				 mask.at<uchar>(col,row) = (uchar)1;
+				 repVoxels.push_back(voxels[imgRepr[row][col]-1]);
+			 }
+		}
+    }
+	cout<<"Repr voxels: "<<repVoxels.size()<<endl;
+
+	setProjectableVoxels(repVoxels,camera);
+	//return imgRepr;
+	return mask;
 }
 
 } /* namespace nl_uu_science_gmt */
