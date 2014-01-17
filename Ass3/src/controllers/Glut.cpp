@@ -974,7 +974,7 @@ Scalar Glut::getColorModelMean(Mat &image, Mat &targetPoints,int camera, int lab
 	{
 		if (projVoxels[v]->label == label)
 		{
-			mask.at<float>(projVoxels[v]->camera_projection[camera]) = 1;
+			mask.at<uchar>(projVoxels[v]->camera_projection[camera]) = 1;
 			//cout<< projVoxels[v]->camera_projection[camera].x << endl;
 			//cout<< projVoxels[v]->camera_projection[camera].y << endl;
 			//mask.at<int>(projVoxels[v]->camera_projection[camera].x+1,projVoxels[v]->camera_projection[camera].y) = 1;
