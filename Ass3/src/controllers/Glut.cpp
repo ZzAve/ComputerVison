@@ -1018,7 +1018,7 @@ Scalar Glut::getColorModelMean(Mat &image, Mat &targetPoints,int camera, int lab
 Mat Glut::getColorModel(Mat image,int camera, int label)
 {
 
-	vector<Reconstructor::Voxel*> projVoxels =_glut->getScene3d().getReconstructor().getProjectableVoxels();
+	vector<Reconstructor::Voxel*> projVoxels =_glut->getScene3d().getReconstructor().getProjectableVoxels(camera);
 	cout << getScene3d().getCurrentFrame() << endl;
 	Mat hsv;
 	cvtColor(image,hsv,CV_BGR2HSV);

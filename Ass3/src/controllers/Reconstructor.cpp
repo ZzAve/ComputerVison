@@ -323,7 +323,8 @@ Mat Reconstructor::reprojectVoxels2(Mat &frame, int camera,int occlusionCheck=1)
 	float distBase, distComp;
 	Voxel* voxBase;
 	Voxel* voxComp;
-	int neigh=0;
+
+	float neigh = 0;
 	if(occlusionCheck != 0)
 	{
 		neigh = 25;
