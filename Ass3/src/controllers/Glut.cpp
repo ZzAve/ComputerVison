@@ -852,8 +852,18 @@ void Glut::drawVoxels()
 	for (int i =0;i<centers.size();i++)
 	{
 		glBegin(GL_LINES);
-		glColor4f(0.5f,0.5f,0.5f,0.5f);
-		glLineWidth(2.0f);
+		glLineWidth(10.0f);
+		if (i == 3)
+			glColor4f(255.0/256,236.0/256,0/256,0.5f);
+		else if (i ==2)
+			glColor4f(0.0/256,134.0/256,203.0/256,0.5f);
+		else if (i ==1)
+			glColor4f(50.0/256,137.0/256,37.0/256,0.5f);
+		else if (i == 0)
+			glColor4f(226.0/256,0.0/256,26.0/256,0.5f);
+		else
+			glColor4f(0.5f,0.5f,0.5f,0.5f);
+		
 		glVertex3f((GLfloat) centers[i].x, (GLfloat) centers[i].y, 0.0);
 		glVertex3f((GLfloat) centers[i].x, (GLfloat)  centers[i].x, 3000.0);
 		glEnd();
