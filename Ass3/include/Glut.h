@@ -60,7 +60,7 @@ public:
 	cv::Mat getColorModel(cv::Mat,int,int);
 	cv::Scalar getColorModelMean(cv::Mat &,cv::Mat&,int,int);
 	void calculateSubjectCenters(cv::vector<cv::Mat>);
-	int getClosestModel(cv::vector<cv::Mat>,cv::Mat);
+	int getClosestModel(cv::vector<cv::Mat>,cv::Vec3b);
 
 #ifdef __linux__
 	void initializeLinux(const char*, int, char**);

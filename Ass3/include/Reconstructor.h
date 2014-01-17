@@ -93,7 +93,7 @@ public:
 		_voxels = voxels;
 	}
 	
-	void setCenters(const std::vector<cv::Point2f> centers)
+	void setCenters(std::vector<cv::Point2f> centers)
 	{
 		_centers = centers;
 	}

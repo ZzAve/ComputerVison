@@ -124,7 +124,7 @@ void Reconstructor::initialize()
 			}
 		}
 	}
-
+	initCenters();
 	cout << "done!" << endl;
 }
 
@@ -205,9 +205,10 @@ void Reconstructor::calculatekMeans()
 	Mat tempCenters;
 	kmeans(points,4,bestLabels,criteria,100,flags,tempCenters);
 	
-	for (int i =0; i < tempCenters.size().height; i++)
+	for (int i =0; i < tempCenters.rows; i++)
 	{
 		kCenters[i]=Point2f(tempCenters.at<float>(i,0),tempCenters.at<float>(i,1));
+		cout << tempCenters.at<float>(i,0)<< " " << tempCenters.at<float>(i,1) << endl;
 	}
 	
 
