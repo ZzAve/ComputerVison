@@ -1101,7 +1101,7 @@ Mat Glut::getColorModel(Mat image,int camera, int label)
 
 void Glut::calculateSubjectCenters(vector<Mat> cModels){
 
-	//reproject all voxels back to cameras
+	//initialize required variables
 	vector<Reconstructor::Voxel*> voxels;
 	Mat frame;
 
@@ -1112,10 +1112,12 @@ void Glut::calculateSubjectCenters(vector<Mat> cModels){
 			frame = _glut->getScene3d().getCameras()[camNr]->getFrame();
 			_glut -> getScene3d().getReconstructor().reprojectVoxels2(frame,camNr);
 			voxels =_glut->getScene3d().getReconstructor().getProjectableVoxels(camNr);
-			Mat camFrame;
+			
+			//convert current frame to HSV for comparison to the colorModels
 			cvtColor(getScene3d().getCameras()[camNr] -> getFrame(),camFrame,CV_BGR2HSV);
 
 		for (int i = 0; i < voxels.size(); i ++){
+
 		
 			    //get the closest colormodel and label the voxel
 				voxels[i]->label = getClosestModel(cModels, camFrame.at<Vec3b>(voxels[i] -> camera_projection[camNr]));
@@ -1134,6 +1136,8 @@ void Glut::calculateSubjectCenters(vector<Mat> cModels){
 
 	vector<float> centersx(4,0.0);
 	vector<float> centersy(4,0.0);
+
+
 	for(int i = 0; i < voxels.size(); i++){
 		centersx[voxels[i] -> label] += ((float)voxels[i]->x) / elementCount[voxels[i]->label];
 		centersy[voxels[i] -> label] += ((float)voxels[i]->y) / elementCount[voxels[i]->label];
@@ -1180,6 +1184,7 @@ void Glut::calculateSubjectCenters(vector<Mat> cModels){
 			}
 		}
 	}
+
 	//determine center for each label
 	centersx.assign(4,0.0);
 	centersy.assign(4,0.0);
@@ -1204,19 +1209,26 @@ void Glut::calculateSubjectCenters(vector<Mat> cModels){
 	waitKey(500);
 }
 
+// assign the inputColor with the label of the colorModel closest to it
 int Glut::getClosestModel(vector<Mat> cModels,cv::Vec3b inputColor){
 
-	float max = 0.0;
+	//Set initial values to first label, and score of the color in first colorModel
+	float score = cModels[0].at<float>(inputColor.val[0]/6,inputColor.val[1]/8);;
 	int label = 0;
 
-	for (int i = 0; i<cModels.size(); i++)
+	//for the other color models,
+	for (int i = 1; i<cModels.size(); i++)
 	{
-		if( max < cModels[i].at<float>(inputColor.val[0]/6,inputColor.val[1]/8))
+		//check if they score better for inputColor
+		if( score < cModels[i].at<float>(inputColor.val[0]/6,inputColor.val[1]/8))
 		{
+			//if so, set label to the better model, and update it's score
 			label = i;
-			max = cModels[i].at<float>(inputColor.val[0]/6,inputColor.val[1]/8);
+			score = cModels[i].at<float>(inputColor.val[0]/6,inputColor.val[1]/8);
 		}
 	}
+
+	//return the index of the best color model
 	return label;
 }
 } /* namespace nl_uu_science_gmt */
