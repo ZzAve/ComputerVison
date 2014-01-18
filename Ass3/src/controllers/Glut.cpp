@@ -1101,91 +1101,87 @@ Mat Glut::getColorModel(Mat image,int camera, int label)
 
 void Glut::calculateSubjectCenters(vector<Mat> cModels){
 
-	//reproject all voxels back to cameras
+	//initialize required variables
 	vector<Reconstructor::Voxel*> voxels;
+	Mat camFrame;
 	vector<float> centersx(4,0.0);
 	vector<float> centersy(4,0.0);
-	//int currentFrame = getScene3d().getCurrentFrame();
-
-	//for each voxel, dertermine the closest label
+	vector<Point2f> centers(4);
 	
+
+	//for each camera,
 	for (int camNr = 0; camNr < 4; camNr++){
 			
+			//get the voxels that are projected onto it, ignoring occluded voxels
 			voxels =_glut->getScene3d().getReconstructor().getProjectableVoxels(camNr);
-			Mat camFrame;
+			
+			//convert current frame to HSV for comparison to the colorModels
 			cvtColor(getScene3d().getCameras()[camNr] -> getFrame(),camFrame,CV_BGR2HSV);
 
 		for (int i = 0; i < voxels.size(); i ++){
-		
-			//if(voxels[i]->valid_camera_projection[camNr]==1){ //check if voxel is visible from this cam
 
-				//if so, get the closest colormodel and label the voxel
+				//for each visible, non-occluded voxel, calculate the new label by comparing pixel value to colorModels
 				voxels[i]->label = getClosestModel(cModels, camFrame.at<Vec3b>(voxels[i] -> camera_projection[camNr]));
-			//}
 		}
 		getScene3d().getReconstructor().setProjectableVoxels(voxels,camNr);
 	}
 
-	display();
-	waitKey(100);
-	
-	//getScene3d().getReconstructor().setVisibleVoxels(voxels);
-
-	//determine center for each label
+	//Count how many voxels are labeled with a certain label
 	vector<float> elementCount(4,0.0);
-	for(int i = 0 ; i < voxels.size(); i++) {
+	for(int i = 0 ; i < voxels.size(); i++) elementCount[voxels[i] -> label]++;
 
-		elementCount[voxels[i] -> label]++;
-	}
-
-
+	//Calculate the new centers, using the average of the voxels with a certain label
 	for(int i = 0; i < voxels.size(); i++){
 		centersx[voxels[i] -> label] += ((float)voxels[i]->x) / elementCount[voxels[i]->label];
 		centersy[voxels[i] -> label] += ((float)voxels[i]->y) / elementCount[voxels[i]->label];
 	}
 
-	vector<Point2f> centers(4);
-	centers[0] = Point2f(centersx[0],centersy[0]);
-	centers[1] = Point2f(centersx[1],centersy[1]);
-	centers[2] = Point2f(centersx[2],centersy[2]);
-	centers[3] = Point2f(centersx[3],centersy[3]);
-	cout <<"eerste center: " << centers[0] << endl;
-	//return centers
+	//Convert centers to the correct datatype
+	for(int i = 0; i < centersx.size(); i++) centers[i] = Point2f(centersx[i],centersy[i]);
+	
+	//Set the new centers
 	_glut -> getScene3d().getReconstructor().setCenters(centers);
 
+	//Get all voxels,
 	voxels = _glut->getScene3d().getReconstructor().getVisibleVoxels();
+
+	//And relabel them according to the new centers
 	for(int i = 0 ; i < voxels.size(); i++) {
 
-		float dist=sqrt((centersx[0]-voxels[i] ->x)*(centersx[0]-voxels[i] ->x) + (centersy[0]-voxels[i] ->y)*(centersy[0]-voxels[i] ->y));
+		float dist = sqrt((centersx[0]-voxels[i] ->x)*(centersx[0]-voxels[i] ->x) + (centersy[0]-voxels[i] ->y)*(centersy[0]-voxels[i] ->y));
 		voxels[i] -> label = 0;
 		for (int l = 1; l < centers.size(); l++)
 		{
 			float newDist =  sqrt((centersx[l]-voxels[i] ->x)*(centersx[l]-voxels[i] ->x) + (centersy[l]-voxels[i] ->y)*(centersy[l]-voxels[i] ->y));
 			if( dist > newDist)
 			{
-			voxels[i] -> label = l;
-			dist = newDist;
-
+				voxels[i] -> label = l;
+				dist = newDist;
 			}
 		}
 	}
-
-	getScene3d().getReconstructor().setVisibleVoxels(voxels);
 }
 
+// assign the inputColor with the label of the colorModel closest to it
 int Glut::getClosestModel(vector<Mat> cModels,cv::Vec3b inputColor){
 
-	float max = 0.0;
+	//Set initial values to first label, and score of the color in first colorModel
+	float score = cModels[0].at<float>(inputColor.val[0]/6,inputColor.val[1]/8);;
 	int label = 0;
 
-	for (int i = 0; i<cModels.size(); i++)
+	//for the other color models,
+	for (int i = 1; i<cModels.size(); i++)
 	{
-		if( max < cModels[i].at<float>(inputColor.val[0]/6,inputColor.val[1]/8))
+		//check if they score better for inputColor
+		if( score < cModels[i].at<float>(inputColor.val[0]/6,inputColor.val[1]/8))
 		{
+			//if so, set label to the better model, and update it's score
 			label = i;
-			max = cModels[i].at<float>(inputColor.val[0]/6,inputColor.val[1]/8);
+			score = cModels[i].at<float>(inputColor.val[0]/6,inputColor.val[1]/8);
 		}
 	}
+
+	//return the index of the best color model
 	return label;
 }
 } /* namespace nl_uu_science_gmt */
