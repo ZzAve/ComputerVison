@@ -402,6 +402,12 @@ Mat Reconstructor::reprojectVoxels2(Mat &frame, int camera,int occlusionCheck)
 
 					distComp = sqrt((camLoc.x - voxComp->x)*(camLoc.x - voxComp->x)  + (camLoc.y - voxComp->y)*(camLoc.y - voxComp->y) 
 						+ (camLoc.z - voxComp->z)*(camLoc.z - voxComp->z));
+
+					if (abs(distBase - distComp)<200)
+					{
+						neighbour[iter] = 0;
+						distComp = distBase + 10;
+					}
 				}
 			}
 

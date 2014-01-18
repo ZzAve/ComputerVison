@@ -852,7 +852,7 @@ void Glut::drawVoxels()
 	for (int i =0;i<centers.size();i++)
 	{
 		glBegin(GL_LINES);
-		glLineWidth(10.0f);
+		glLineWidth((GLfloat) 3);
 		if (i == 3)
 			glColor4f(255.0/256,236.0/256,0/256,0.5f);
 		else if (i ==2)
@@ -865,7 +865,7 @@ void Glut::drawVoxels()
 			glColor4f(0.5f,0.5f,0.5f,0.5f);
 		
 		glVertex3f((GLfloat) centers[i].x, (GLfloat) centers[i].y, 0.0);
-		glVertex3f((GLfloat) centers[i].x, (GLfloat)  centers[i].x, 3000.0);
+		glVertex3f((GLfloat) centers[i].x, (GLfloat)  centers[i].y, 3000.0);
 		glEnd();
 	}
 	// apply default translation
@@ -1103,31 +1103,25 @@ void Glut::calculateSubjectCenters(vector<Mat> cModels){
 
 	//reproject all voxels back to cameras
 	vector<Reconstructor::Voxel*> voxels;
-	vector<float> centersx(4,0.0);
-	vector<float> centersy(4,0.0);
-	//int currentFrame = getScene3d().getCurrentFrame();
+	Mat frame;
 
 	//for each voxel, dertermine the closest label
-	
+	cout<< "Initial labeling for camera: ";
 	for (int camNr = 0; camNr < 4; camNr++){
-			
+			cout<<camNr<<" ";
+			frame = _glut->getScene3d().getCameras()[camNr]->getFrame();
+			_glut -> getScene3d().getReconstructor().reprojectVoxels2(frame,camNr);
 			voxels =_glut->getScene3d().getReconstructor().getProjectableVoxels(camNr);
 			Mat camFrame;
 			cvtColor(getScene3d().getCameras()[camNr] -> getFrame(),camFrame,CV_BGR2HSV);
 
 		for (int i = 0; i < voxels.size(); i ++){
 		
-			//if(voxels[i]->valid_camera_projection[camNr]==1){ //check if voxel is visible from this cam
-
-				//if so, get the closest colormodel and label the voxel
+			    //get the closest colormodel and label the voxel
 				voxels[i]->label = getClosestModel(cModels, camFrame.at<Vec3b>(voxels[i] -> camera_projection[camNr]));
-			//}
 		}
 		getScene3d().getReconstructor().setProjectableVoxels(voxels,camNr);
 	}
-
-	display();
-	waitKey(100);
 	
 	//getScene3d().getReconstructor().setVisibleVoxels(voxels);
 
@@ -1138,7 +1132,8 @@ void Glut::calculateSubjectCenters(vector<Mat> cModels){
 		elementCount[voxels[i] -> label]++;
 	}
 
-
+	vector<float> centersx(4,0.0);
+	vector<float> centersy(4,0.0);
 	for(int i = 0; i < voxels.size(); i++){
 		centersx[voxels[i] -> label] += ((float)voxels[i]->x) / elementCount[voxels[i]->label];
 		centersy[voxels[i] -> label] += ((float)voxels[i]->y) / elementCount[voxels[i]->label];
@@ -1149,28 +1144,64 @@ void Glut::calculateSubjectCenters(vector<Mat> cModels){
 	centers[1] = Point2f(centersx[1],centersy[1]);
 	centers[2] = Point2f(centersx[2],centersy[2]);
 	centers[3] = Point2f(centersx[3],centersy[3]);
-	cout <<"eerste center: " << centers[0] << endl;
+	cout <<"First centers: " <<endl 
+		<<  centers[0] <<endl 
+		<<  centers[1] <<endl 
+		<<  centers[2] <<endl 
+		<<  centers[3] <<endl;
+
 	//return centers
 	_glut -> getScene3d().getReconstructor().setCenters(centers);
 
-	voxels = _glut->getScene3d().getReconstructor().getVisibleVoxels();
-	for(int i = 0 ; i < voxels.size(); i++) {
+	display();
+	waitKey(500);
 
-		float dist=sqrt((centersx[0]-voxels[i] ->x)*(centersx[0]-voxels[i] ->x) + (centersy[0]-voxels[i] ->y)*(centersy[0]-voxels[i] ->y));
+	//// //// DONE WITH INITIAL LABELING //// /// //// /// //// 
+
+	voxels = _glut->getScene3d().getReconstructor().getVisibleVoxels();
+	float dist, newDist;
+	for(size_t i = 0 ; i < voxels.size(); i++) {
+		// Every voxel starts with label 1
+		dist=sqrt( (centersx[0] - voxels[i]->x)*( centersx[0] - voxels[i]->x) 
+			     + (centersy[0] - voxels[i]->y)*( centersy[0] - voxels[i]->y) );
+		
 		voxels[i] -> label = 0;
 		for (int l = 1; l < centers.size(); l++)
 		{
-			float newDist =  sqrt((centersx[l]-voxels[i] ->x)*(centersx[l]-voxels[i] ->x) + (centersy[l]-voxels[i] ->y)*(centersy[l]-voxels[i] ->y));
+			//Compare the distance to a label center
+			newDist = sqrt( (centersx[l] - voxels[i] ->x)*(centersx[l] - voxels[i] ->x) 
+				          + (centersy[l] - voxels[i] ->y)*(centersy[l] - voxels[i] ->y) ) ;
+
+			// If the new labelcenter is closer to the voxel, relabel;
 			if( dist > newDist)
 			{
-			voxels[i] -> label = l;
-			dist = newDist;
-
+				voxels[i] -> label = l;
+				dist = newDist;
 			}
 		}
 	}
+	//determine center for each label
+	centersx.assign(4,0.0);
+	centersy.assign(4,0.0);
+	for(int i = 0; i < voxels.size(); i++){
+		centersx[voxels[i] -> label] += ((float)voxels[i]->x) / elementCount[voxels[i]->label];
+		centersy[voxels[i] -> label] += ((float)voxels[i]->y) / elementCount[voxels[i]->label];
+	}
 
-	getScene3d().getReconstructor().setVisibleVoxels(voxels);
+	centers[0] = Point2f(centersx[0],centersy[0]);
+	centers[1] = Point2f(centersx[1],centersy[1]);
+	centers[2] = Point2f(centersx[2],centersy[2]);
+	centers[3] = Point2f(centersx[3],centersy[3]);
+	cout <<"New centers: " <<endl 
+		<<  centers[0] <<endl 
+		<<  centers[1] <<endl 
+		<<  centers[2] <<endl 
+		<<  centers[3] <<endl;
+	
+	_glut -> getScene3d().getReconstructor().setCenters(centers);
+	_glut -> getScene3d().getReconstructor().setVisibleVoxels(voxels);
+	display();
+	waitKey(500);
 }
 
 int Glut::getClosestModel(vector<Mat> cModels,cv::Vec3b inputColor){
