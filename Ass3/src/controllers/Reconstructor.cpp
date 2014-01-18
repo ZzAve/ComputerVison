@@ -316,13 +316,14 @@ Mat Reconstructor::reprojectVoxels2(Mat &frame, int camera)
 {
 	return reprojectVoxels2(frame,camera,1);
 }
+
 Mat Reconstructor::reprojectVoxels2(Mat &frame, int camera,int occlusionCheck)
 {
 	cout<<"Reprojecting voxels for camera "<<camera<<endl;
 	
 	vector<Voxel*> voxels = getVisibleVoxels();
 	Point3f camLoc = getCameras()[camera]->getCameraLocation();
-	cout<<"Visible voxels: "<<voxels.size();
+	cout<<"Visible voxels: "<<voxels.size()<<endl;
 	float distBase, distComp;
 	Voxel* voxBase;
 	Voxel* voxComp;
@@ -337,8 +338,8 @@ Mat Reconstructor::reprojectVoxels2(Mat &frame, int camera,int occlusionCheck)
 	vector<int> neighbour(neigh,0);
 	vector<int> dummy(frame.size().height,0);
 	vector<vector<int>> imgRepr(frame.size().width,dummy);
-	cout<<"imgRepr.size() x imgRepr[0].size()  "<<imgRepr.size()<<" x "<<imgRepr[0].size()<<endl; 
-	cout<<"frame.size() "<< frame.size()<<endl;
+	//cout<<"imgRepr.size() x imgRepr[0].size()  "<<imgRepr.size()<<" x "<<imgRepr[0].size()<<endl; 
+	//cout<<"frame.size() "<< frame.size()<<endl;
 	for (int base=0; base<voxels.size();base++)
 	{		
 		
@@ -376,7 +377,7 @@ Mat Reconstructor::reprojectVoxels2(Mat &frame, int camera,int occlusionCheck)
 				for (int j=0;j<(int)sqrt(neigh);j++)
 				{
 					if( (projection.x + (i-((int)sqrt(neigh)-2)) > 0) && (projection.x + (i-((int)sqrt(neigh)-2)) < imgRepr.size() ) 
-						&& (projection.y + (j-((int)sqrt(neigh)-2)) > 0) && (projection.y + (j-((int)sqrt(neigh)-2)) << imgRepr[0].size()) )
+						&& (projection.y + (j-((int)sqrt(neigh)-2)) > 0) && (projection.y + (j-((int)sqrt(neigh)-2)) < imgRepr[0].size()) )
 					{
 						neighbour[(sqrt(neigh)*i)+j] = imgRepr[projection.x + (i-(sqrt(neigh)-2))][projection.y + (j-(sqrt(neigh)-2))];
 					}
@@ -413,7 +414,7 @@ Mat Reconstructor::reprojectVoxels2(Mat &frame, int camera,int occlusionCheck)
 					for (int j=0;j<(int)sqrt(neigh);j++)
 					{
 						if( (projection.x + (i-((int)sqrt(neigh)-2)) > 0) && (projection.x + (i-((int)sqrt(neigh)-2)) < imgRepr.size()) 
-							&& (projection.y + (j-((int)sqrt(neigh)-2)) > 0) && (projection.y + (j-((int)sqrt(neigh)-2)) << imgRepr[0].size()) )
+							&& (projection.y + (j-((int)sqrt(neigh)-2)) > 0) && (projection.y + (j-((int)sqrt(neigh)-2)) < imgRepr[0].size()) )
 						{
 							imgRepr[projection.x + (i-((int)sqrt(neigh)-2))][projection.y + (j-((int)sqrt(neigh)-2))] = 0;
 						}
@@ -431,7 +432,7 @@ Mat Reconstructor::reprojectVoxels2(Mat &frame, int camera,int occlusionCheck)
 	Mat mask(frame.size(),CV_8U);
 	mask = uchar(0);
 	//cout<<"mask "<<mask.size()<<endl;
-	cout<<"imgRepr" << imgRepr.size() << " x " << imgRepr[0].size()<<endl; 
+	//cout<<"imgRepr "<< imgRepr.size() << " x " << imgRepr[0].size()<<endl; 
 	for(int row = 0; row < imgRepr.size();row++) 
 	{
 		for(int col = 0; col < imgRepr[row].size(); col++) 
