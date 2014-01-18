@@ -390,9 +390,9 @@ Mat Reconstructor::reprojectVoxels2(Mat &frame, int camera,int occlusionCheck)
 			distComp = distBase + 10;
 			// check all entries subsequently
 			iter =-1;
-			while( (distBase - distComp)<100 && iter<neigh)
+			while( (distBase - distComp)<200 && iter<neigh)
 			{
-				if (iter>-1 && abs(distBase - distComp)>100 ) neighbour[iter]=0;
+				if (iter>-1 && abs(distBase - distComp)>200 ) neighbour[iter]=0;
 				iter++;
 				// skip self and 0 entries
 				if ( (iter != (neigh-1)/2) && (neighbour[iter] > 0) )
