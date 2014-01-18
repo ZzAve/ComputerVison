@@ -42,6 +42,7 @@ class Glut
 	static void drawGrdGrid();
 	static void drawCamCoord();
 	static void drawVolume();
+	static void drawPersonBound(cv::Point2f);
 	static void drawArcball();
 	static void drawVoxels();
 	static void drawWCoord();
@@ -61,6 +62,8 @@ public:
 	cv::Scalar getColorModelMean(cv::Mat &,cv::Mat&,int,int);
 	void calculateSubjectCenters(cv::vector<cv::Mat>);
 	int getClosestModel(cv::vector<cv::Mat>,cv::Vec3b);
+	int getClosestModel2(std::vector<cv::Mat> ,cv::Mat);
+	cv::Mat getHistoGram(cv::Mat, cv::Mat);
 
 #ifdef __linux__
 	void initializeLinux(const char*, int, char**);

@@ -40,7 +40,7 @@ private:
 	std::vector<Voxel*> _voxels;
 	std::vector<Voxel*> _visible_voxels;
 	std::vector<std::vector<Voxel*>> _projectable_voxels;
-
+	
 	std::vector<cv::Point2f> _centers;
 
 	void initialize();
@@ -54,7 +54,7 @@ public:
 	std::vector<std::vector<std::vector<cv::Point2f>>> reprojectVoxels(cv::Mat);
 	cv::Mat reprojectVoxels2(cv::Mat &, int,int);
 	cv::Mat reprojectVoxels2(cv::Mat &, int);
-
+	bool xvalue(const Voxel* &,const Voxel* &);
 	const std::vector<Voxel*>& getVisibleVoxels() const
 	{
 		return _visible_voxels;
@@ -136,6 +136,7 @@ public:
 	{
 		_centers.resize(4);
 	}
+
 };
 
 } /* namespace nl_uu_science_gmt */

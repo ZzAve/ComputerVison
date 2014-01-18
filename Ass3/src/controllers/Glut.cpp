@@ -222,6 +222,8 @@ void Glut::mainLoopWindows()
 	myfile << "FrameNr \t Person 1 \t\t Person 2 \t\t Person 3 \t\t Person 4 \n";
 	myfile << "\t x \t y   \t   x \t y   \t   x \t y   \t   x \t y   \n";
 	myfile.close();
+	cout<<"Ready?? "<<endl;
+	waitKey();
 	while(!_glut->getScene3d().isQuit())
 	{
 		// get the centers based on cModels
@@ -823,6 +825,63 @@ void Glut::drawVolume()
 	glPopMatrix();
 }
 
+void Glut::drawPersonBound(Point2f center)
+{
+	//vector<Point3f*> corners = _glut->getScene3d().getReconstructor().getCorners();
+	int bound = 200;
+	glLineWidth(1.0f);
+	glBegin(GL_LINES);
+
+	// VR->volumeCorners[0]; // what's this frank?
+	// bottom
+	
+	glVertex3f((GLfloat) center.x -bound, (GLfloat) center.y -bound, 0);
+	glVertex3f((GLfloat) center.x -bound, (GLfloat) center.y +bound, 0);
+
+	
+	glVertex3f((GLfloat) center.x -bound, (GLfloat) center.y +bound, 0);
+	glVertex3f((GLfloat) center.x +bound, (GLfloat) center.y +bound, 0);
+
+	
+	glVertex3f((GLfloat) center.x +bound, (GLfloat) center.y +bound, 0);
+	glVertex3f((GLfloat) center.x +bound, (GLfloat) center.y -bound, 0);
+	
+	glVertex3f((GLfloat) center.x +bound, (GLfloat) center.y -bound, 0);
+	glVertex3f((GLfloat) center.x -bound, (GLfloat) center.y -bound, 0);
+
+	// top
+	
+	glVertex3f((GLfloat) center.x -bound, (GLfloat) center.y -bound, 2200);
+	glVertex3f((GLfloat) center.x -bound, (GLfloat) center.y +bound, 2200);
+
+	
+	glVertex3f((GLfloat) center.x -bound, (GLfloat) center.y +bound, 2200);
+	glVertex3f((GLfloat) center.x +bound, (GLfloat) center.y +bound, 2200);
+
+	
+	glVertex3f((GLfloat) center.x +bound, (GLfloat) center.y +bound, 2200);
+	glVertex3f((GLfloat) center.x +bound, (GLfloat) center.y -bound, 2200);
+	
+	glVertex3f((GLfloat) center.x +bound, (GLfloat) center.y -bound, 2200);
+	glVertex3f((GLfloat) center.x -bound, (GLfloat) center.y -bound, 2200);
+
+	// connection
+	glVertex3f((GLfloat) center.x -bound, (GLfloat) center.y -bound, 0);
+	glVertex3f((GLfloat) center.x -bound, (GLfloat) center.y -bound, 2200);
+
+	
+	glVertex3f((GLfloat) center.x -bound, (GLfloat) center.y +bound, 0);
+	glVertex3f((GLfloat) center.x -bound, (GLfloat) center.y +bound, 2200);
+
+	
+	glVertex3f((GLfloat) center.x +bound, (GLfloat) center.y +bound, 0);
+	glVertex3f((GLfloat) center.x +bound, (GLfloat) center.y +bound, 2200);
+	
+	glVertex3f((GLfloat) center.x +bound, (GLfloat) center.y -bound, 0);
+	glVertex3f((GLfloat) center.x +bound, (GLfloat) center.y -bound, 2200);
+
+}
+
 /**
  * Draw the arcball wiresphere that guides scene rotation
  */
@@ -870,8 +929,9 @@ void Glut::drawVoxels()
 		else
 			glColor4f(0.5f,0.5f,0.5f,0.5f);
 		
-		glVertex3f((GLfloat) centers[i].x, (GLfloat) centers[i].y, 0.0);
-		glVertex3f((GLfloat) centers[i].x, (GLfloat)  centers[i].y, 3000.0);
+		drawPersonBound(centers[i]);
+		//glVertex3f((GLfloat) centers[i].x, (GLfloat) centers[i].y, 0.0);
+		//glVertex3f((GLfloat) centers[i].x, (GLfloat)  centers[i].y, 3000.0);
 		glEnd();
 	}
 	// apply default translation
@@ -972,6 +1032,62 @@ void Glut::drawInfo()
 #endif
 }
 
+
+Mat Glut::getHistoGram(Mat image, Mat mask)
+{
+	Mat hsv;
+	cvtColor(image,hsv,CV_BGR2HSV);
+
+	//set all values for the generation of the histogram
+    int hbins = 30, sbins = 32;
+    int histSize[] = {hbins, sbins};
+    float hranges[] = { 0, 180 };
+    float sranges[] = { 0, 256 };
+    const float* ranges[] = { hranges, sranges }; 
+	MatND hist;
+    int channels[] = {0, 1};
+
+    calcHist( &hsv, 1, channels, mask, hist, 2, histSize, ranges, true, false );
+	//return hist;
+
+	/*
+	double maxVal=0;
+    minMaxLoc(hist, 0, &maxVal, 0, 0);
+
+    int scale = 10;
+    Mat histImg = Mat::zeros(sbins*scale, hbins*10, CV_8UC3);
+
+    for( int h = 0; h < hbins; h++ )
+	{
+        for( int s = 0; s < sbins; s++ )
+        {
+            float binVal = hist.at<float>(h, s);
+            int intensity = cvRound(binVal*255/maxVal);
+            rectangle( histImg, Point(h*scale, s*scale),
+                        Point( (h+1)*scale - 1, (s+1)*scale - 1),
+                        Scalar::all(intensity),
+                        CV_FILLED );
+        }
+	}
+
+  
+	imshow("Histogram",histImg);
+	Mat imageMask;
+	hsv.copyTo(imageMask,mask);
+	imshow("Masked img",imageMask);
+
+
+	int key = waitKey();
+	if (key =='s' || key == 115)
+	{
+		imshow("Histogram save",histImg);
+	}
+	*/
+
+	return hist;
+
+}
+
 //Calculate colormodel in the form of an HSV histogram, given an image, camera and label
 Mat Glut::getColorModel(Mat image,int camera, int label)
 {
@@ -983,19 +1099,22 @@ Mat Glut::getColorModel(Mat image,int camera, int label)
 	cvtColor(image,hsv,CV_BGR2HSV);
 	Mat mask(hsv.size(),CV_8U);
 	mask= uchar(0);
-
+	Mat masked;
 	//for all voxels,
 	for(size_t v=0;v<projVoxels.size();v++)
 	{
 		//check if they belong to the correct label,
 		if (projVoxels[v]->label == label)
-		{
-			//if so, set maskvalue to 1, to include this pixel in the colormodel
-			mask.at<uchar>(projVoxels[v]->camera_projection[camera]) = 1;
+		{			
+			Point resp = projVoxels[v]->camera_projection[camera];
+			mask.at<uchar>(resp) = 1;
+			dilate(mask,masked, Mat(), Point(-1, -1), 1);
 		}
 	}
 
-	//set all values for the generation of the histogram
+	return getHistoGram(image,masked);
+	
+	/*//set all values for the generation of the histogram
     int hbins = 30, sbins = 32;
     int histSize[] = {hbins, sbins};
     float hranges[] = { 0, 180 };
@@ -1014,6 +1133,7 @@ Mat Glut::getColorModel(Mat image,int camera, int label)
     Mat histImg = Mat::zeros(sbins*scale, hbins*10, CV_8UC3);
 
     for( int h = 0; h < hbins; h++ )
+	{
         for( int s = 0; s < sbins; s++ )
         {
             float binVal = hist.at<float>(h, s);
@@ -1023,105 +1143,156 @@ Mat Glut::getColorModel(Mat image,int camera, int label)
                         Scalar::all(intensity),
                         CV_FILLED );
         }
+	}*/
+	/*imshow("Histogram",histImg);
+	Mat imageMask;
+	image.copyTo(imageMask,mask);
+	imshow("Masked img",imageMask);
 
-    return hist;
+
+	waitKey();
+	*/
+    //return hist;
 }
 
 void Glut::calculateSubjectCenters(vector<Mat> cModels){
 
-	//initialize required variables
+	//initialize the voxels
 	vector<Reconstructor::Voxel*> voxels = getScene3d().getReconstructor().getVisibleVoxels();
 	for (size_t v=0;v<voxels.size();v++)
 	{ 
 		voxels[v]->label = -1;
 	}
 	getScene3d().getReconstructor().setVisibleVoxels(voxels);
+
 	Mat frame, frameHSV;
 	vector<float> centersx(4,0.0);
 	vector<float> centersy(4,0.0);
 	vector<Point2f> centers(4);
 
-	//for each voxel, dertermine the closest label
-	for (int camNr = 0; camNr < 4; camNr++){
-	
-			frame = _glut->getScene3d().getCameras()[camNr]->getFrame();
-			_glut -> getScene3d().getReconstructor().reprojectVoxels2(frame,camNr);
-			voxels =_glut->getScene3d().getReconstructor().getProjectableVoxels(camNr);
+	//for each voxel, determine the closest label
+	cout<< "Getting closest label for  cam ";
+	for (int camNr = 3; camNr >= 0; camNr--){
+		cout<<camNr<< " ";
+		frame = _glut->getScene3d().getCameras()[camNr]->getFrame();
+		getScene3d().getReconstructor().reprojectVoxels2(frame,camNr);
+		voxels = getScene3d().getReconstructor().getProjectableVoxels(camNr);
 			
-			//convert current frame to HSV for comparison to the colorModels
-			cvtColor(frame,frameHSV,CV_BGR2HSV);
+		//convert current frame to HSV for comparison to the colorModels
+		cvtColor(frame,frameHSV,CV_BGR2HSV);
 
-		for (int i = 0; i < voxels.size(); i ++){
-		
-			    //get the closest colormodel and label the voxel
-				voxels[i]->label = getClosestModel(cModels, frameHSV.at<Vec3b>(voxels[i] -> camera_projection[camNr]));
-		}
-		getScene3d().getReconstructor().setProjectableVoxels(voxels,camNr);
-	}
-	
-
-	//determine center for each label
-	vector<float> elementCount(4,0.0);
-	for(int i = 0 ; i < voxels.size(); i++) elementCount[voxels[i] -> label]++;
-
-	for(int i = 0; i < voxels.size(); i++){
-		centersx[voxels[i] -> label] += ((float)voxels[i]->x) / elementCount[voxels[i]->label];
-		centersy[voxels[i] -> label] += ((float)voxels[i]->y) / elementCount[voxels[i]->label];
-	}
-
-	//convert centers to the correct format
-	for(int i = 0; i< centers.size(); i++) centers[i] = Point2f(centersx[i],centersy[i]);
-	//set the new centers
-	_glut -> getScene3d().getReconstructor().setCenters(centers);
-
-	display();
-	waitKey(1000);
-	//// //// DONE WITH INITIAL LABELING //// /// //// /// //// 
-
-	voxels = _glut->getScene3d().getReconstructor().getVisibleVoxels();
-	float dist, newDist;
-	for(size_t i = 0 ; i < voxels.size(); i++) {
-		// Every voxel starts with label 1
-		dist=sqrt( (centersx[0] - voxels[i]->x)*( centersx[0] - voxels[i]->x) 
-			     + (centersy[0] - voxels[i]->y)*( centersy[0] - voxels[i]->y) );
-		
-		voxels[i] -> label = 0;
-		for (int l = 1; l < centers.size(); l++)
+		for (int i = 0; i < voxels.size(); i++)
 		{
-			//Compare the distance to a label center
-			newDist = sqrt( (centersx[l] - voxels[i] ->x)*(centersx[l] - voxels[i] ->x) 
-				          + (centersy[l] - voxels[i] ->y)*(centersy[l] - voxels[i] ->y) ) ;
-
-			// If the new labelcenter is closer to the voxel, relabel;
-			if( dist > newDist)
+			if(voxels[i] -> z>=700 && voxels[i]->z<=1600 && voxels[i]->label==-1)
 			{
-				voxels[i] -> label = l;
-				dist = newDist;
+			    //get the closest colormodel and label the voxel
+				//build mask
+				
+				Mat mask(frame.size(),CV_8U);
+				mask = uchar(0);
+				Mat masked;
+				Point resp = voxels[i]->camera_projection[camNr];
+				mask.at<uchar>(resp ) = 1;
+				dilate(mask,masked, Mat(), Point(-1, -1),1);
+
+				Mat model = getHistoGram(frame,masked);
+				//voxels[i]->label = getClosestModel(cModels, frameHSV.at<Vec3b>(voxels[i] -> camera_projection[camNr]));
+				voxels[i]->label = getClosestModel2(cModels, model);
 			}
 		}
+		getScene3d().getReconstructor().setProjectableVoxels(voxels,camNr);
+		display();
+	}
+	cout<<endl;
+	
+	voxels = getScene3d().getReconstructor().getVisibleVoxels();
+	//determine center for each label
+	
+	vector<float> elementCount(4,0.0);
+	for(int i = 0 ; i < voxels.size(); i++)
+	{
+		if (voxels[i]->label !=-1)
+			elementCount[voxels[i] -> label]++;
 	}
 
-
-	//determine center for each label
-	elementCount.assign(4,0.0);
-	for(int i = 0 ; i < voxels.size(); i++) elementCount[voxels[i] -> label]++;
-	centersx.assign(4,0.0);
-	centersy.assign(4,0.0);
 	for(int i = 0; i < voxels.size(); i++){
-		centersx[voxels[i] -> label] += ((float)voxels[i]->x) / elementCount[voxels[i]->label];
-		centersy[voxels[i] -> label] += ((float)voxels[i]->y) / elementCount[voxels[i]->label];
+		if (voxels[i]->label != -1)
+		{
+			centersx[voxels[i] -> label] += ((float)voxels[i]->x) / elementCount[voxels[i]->label];
+			centersy[voxels[i] -> label] += ((float)voxels[i]->y) / elementCount[voxels[i]->label];
+		}
 	}
 
 	//convert centers to the correct format
 	for(int i = 0; i< centers.size(); i++) centers[i] = Point2f(centersx[i],centersy[i]);
-
-	_glut -> getScene3d().getReconstructor().setCenters(centers);
+	
+	//set the new centers
+	getScene3d().getReconstructor().setCenters(centers);
+	cout <<"First centers: " <<endl 
+		<<  centers[0] <<endl 
+		<<  centers[1] <<endl 
+		<<  centers[2] <<endl 
+		<<  centers[3] <<endl;
 	display();
-	waitKey(500);
+	waitKey();
+	//// //// DONE WITH INITIAL LABELING //// /// //// /// //// 
+	/*
+	voxels = getScene3d().getReconstructor().getVisibleVoxels();
+	float dist, newDist;
+	
+	for (int repeat=0;repeat<2;repeat++){
+		for(size_t i = 0 ; i < voxels.size(); i++) {
+			// Every voxel starts with label 1
+			dist=sqrt( (centersx[0] - voxels[i]->x)*( centersx[0] - voxels[i]->x) 
+					 + (centersy[0] - voxels[i]->y)*( centersy[0] - voxels[i]->y) );
+		
+			voxels[i] -> label = 0;
+			for (int l = 1; l < centers.size(); l++)
+			{
+				//Compare the distance to a label center
+				newDist = sqrt( (centersx[l] - voxels[i] ->x)*(centersx[l] - voxels[i] ->x) 
+							  + (centersy[l] - voxels[i] ->y)*(centersy[l] - voxels[i] ->y) ) ;
 
+				// If the new labelcenter is closer to the voxel, relabel;
+				if( dist > newDist)
+				{
+					voxels[i] -> label = l;
+					dist = newDist;
+				}
+			}
+		}
+
+	
+		getScene3d().getReconstructor().setVisibleVoxels(voxels);
+
+		//determine center for each label
+		elementCount.assign(4,0.0);
+		for(int i = 0 ; i < voxels.size(); i++) elementCount[voxels[i] -> label]++;
+		centersx.assign(4,0.0);
+		centersy.assign(4,0.0);
+		for(int i = 0; i < voxels.size(); i++){
+			centersx[voxels[i] -> label] += ((float)voxels[i]->x) / elementCount[voxels[i]->label];
+			centersy[voxels[i] -> label] += ((float)voxels[i]->y) / elementCount[voxels[i]->label];
+		}
+
+		centers.assign(4,Point(0,0));
+		//convert centers to the correct format
+		for(int j = 0; j< centers.size(); j++) centers[j] = Point2f(centersx[j],centersy[j]);
+	}
+	
+
+	getScene3d().getReconstructor().setCenters(centers);
+	cout <<"Second centers: " <<endl 
+		<<  centers[0] <<endl 
+		<<  centers[1] <<endl 
+		<<  centers[2] <<endl 
+		<<  centers[3] <<endl;
+	display();
+	waitKey(300);
+	*/
 	//write centers
 	ofstream myfile;
-	myfile.open ("trackcenters.txt", ios::out | ios::app); 
+	myfile.open ("trackcenters.txt", ios::out | ios::app |ios::binary); 
 	myfile << getScene3d().getCurrentFrame()<<"\t";
 	for (int i=0;i<centers.size();i++)
 	{
@@ -1131,22 +1302,43 @@ void Glut::calculateSubjectCenters(vector<Mat> cModels){
 	myfile.close();
 }
 
+
+int Glut::getClosestModel2(vector<Mat> cModels,Mat pixel)
+{
+	double curBest= compareHist(cModels[0],pixel,CV_COMP_CHISQR);	
+	double res;
+
+	int curLabel=0;
+	for (int label=1;label<4;label++)
+	{
+		//cout<<label << " -th comparison ";
+		res = compareHist(cModels[label],pixel,CV_COMP_CHISQR);	
+		//cout<<res << " < "<<curBest << " = " << (res<curBest)<<endl;
+		if (res < curBest)
+		{
+			curBest = res;
+			curLabel = label;
+		}
+	}
+	return curLabel;
+}
+
 // assign the inputColor with the label of the colorModel closest to it
 int Glut::getClosestModel(vector<Mat> cModels,cv::Vec3b inputColor){
 
 	//Set initial values to first label, and score of the color in first colorModel
-	float score = cModels[0].at<float>(inputColor.val[0]/6,inputColor.val[1]/8);;
+	float score = cModels[0].at<float>(inputColor.val[0],inputColor.val[1]);;
 	int label = 0;
 
 	//for the other color models,
 	for (int i = 1; i<cModels.size(); i++)
 	{
 		//check if they score better for inputColor
-		if( score < cModels[i].at<float>(inputColor.val[0]/6,inputColor.val[1]/8))
+		if( score < cModels[i].at<float>(inputColor.val[0],inputColor.val[1]))
 		{
 			//if so, set label to the better model, and update it's score
 			label = i;
-			score = cModels[i].at<float>(inputColor.val[0]/6,inputColor.val[1]/8);
+			score = cModels[i].at<float>(inputColor.val[0],inputColor.val[1]);
 		}
 	}
 

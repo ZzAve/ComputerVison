@@ -6,6 +6,8 @@
  */
 
 #include "Reconstructor.h"
+#include <algorithm>    // std::sort
+#include <vector>
 
 using namespace std;
 using namespace cv;
@@ -84,13 +86,13 @@ void Reconstructor::initialize()
 #ifdef PARALLEL_PROCESS
 #pragma omp parallel for //schedule(static, 1)
 #endif
-	for (int z = zL; z < zR; z += _step)
+	for (int y = yL; y < yR; y += _step)
 	{
 		cout << "." << flush;
 
-		for (int y = yL; y < yR; y += _step)
+		for (int x = xL; x < xR; x += _step)
 		{
-			for (int x = xL; x < xR; x += _step)
+			for (int z = zL; z < zR; z += _step)
 			{
 				Voxel* voxel = new Voxel;
 				voxel->x = x;
@@ -180,7 +182,7 @@ void Reconstructor::update()
 */
 void Reconstructor::calculatekMeans()
 {
-	vector<Voxel*> visVox = getVisibleVoxels();
+	vector<Voxel*> visVox =_visible_voxels;
 	Mat points, bestLabels;
 	double x,y;
 	for (int i=0;i<visVox.size();i++)
@@ -217,99 +219,14 @@ void Reconstructor::calculatekMeans()
 	{
 		visVox[v] ->label = bestLabels.at<int>(v);
 	}
-	setVisibleVoxels(visVox);
 
-	setCenters(kCenters);
+	_visible_voxels  = visVox;
+	_centers = kCenters;
 }
 
-
-vector<vector<vector<Point2f>>> Reconstructor::reprojectVoxels(Mat labels)
+bool Reconstructor::xvalue(const Voxel* &a,const Voxel* &b)
 {
-	cout<<"Reprojecting voxels"<<endl;
-	// if points with the same coordinates, only take the one that is closest
-	vector<Voxel*> voxels = getVisibleVoxels();
-	//int bx,by,kx,ky;
-	//Point3f camlocation;
-	//float distBase, distK;
-	
-	vector<vector<vector<Point2f>>> imgPoints(voxels[0] ->camera_projection.size());
-	vector<vector<Point2f>> points(4); //  4 lists, for every label one.
-	for (int c=0; c<voxels[0]->camera_projection.size();c++)
-	{
-		cout<<"Checking cam "<<c<<endl;
-		// set all entries
-		for (int base=0; base<voxels.size();base++)
-		{
-			cout<<" Put at: points["<<labels.at<int>(base)<<"].push_back( "<<voxels[base] -> camera_projection[c]<<" )"<<endl;
-			points[labels.at<int>(base)].push_back( voxels[base] -> camera_projection[c] );
-		}
-		imgPoints[c]=points;
-		cout<<"Put at imgPoints["<<c<<"]"<<endl;
-		cout<<endl;
-	}
-
-	// bad way is done
-	return imgPoints;
-
-	/*
-	//check each view
-	for (int c=0; c<voxels[0]->camera_projection.size();c++)
-	{
-		// compare every entry	
-		for (int base=0; base<voxels.size()-1;base++)
-		{
-			if (voxels[base]->valid_camera_projection[c] == 1)
-			{
-				for (int k=base+1; k<voxels.size(); k++)
-				{
-					if (voxels[k]->valid_camera_projection[c] ==1 && voxels[base]->valid_camera_projection[c]==1)
-					{
-						//compare the two voxel projections
-						bx = (voxels[base] -> camera_projection[c]).x;
-						by = (voxels[base] -> camera_projection[c]).y;
-						kx = (voxels[k] -> camera_projection[c]).x;
-						ky = (voxels[k] -> camera_projection[c]).y;	
-
-						if (bx==kx && by==ky)
-						{
-							//two equal points. Now include the one closest to the camera
-							// get camera c
-							// get distances
-							camlocation = getCameras()[c] -> getCameraLocation();
-							
-							distBase = (camlocation.x - voxels[base]->z )*(camlocation.x - voxels[base]->z )+
-							(camlocation.y - voxels[base]->y )*(camlocation.y - voxels[base]->y )+
-							(camlocation.z - voxels[base]->z )*(camlocation.z - voxels[base]->z );
-
-							distK = (camlocation.x - voxels[k]->z )*(camlocation.x - voxels[k]->z )+
-							(camlocation.y - voxels[k]->y )*(camlocation.y - voxels[k]->y )+
-							(camlocation.z - voxels[k]->z )*(camlocation.z - voxels[k]->z );
-
-							if (distBase >= distK)						
-								voxels[base] -> valid_camera_projection[c] = 0;
-							else 
-								voxels[k] -> valid_camera_projection[c] = 0;
-
-						}
-					}
-				} // end base if
-			} // end base loop
-		}
-	}
-	vector<vector<vector<Point2f>>> imgPoints;
-	vector<vector<Point2f>> points(4);
-	for (int c=0; c<voxels[0]->camera_projection.size(); c++)
-	{
-			for (size_t v=0;v<voxels.size();v++)
-			{
-				if (voxels[v] -> valid_camera_projection[c] == 1)
-					points[labels.at<int>(v)].push_back(voxels[v]->camera_projection[c]);
-			}
-			imgPoints.push_back(points);
-	}
-	
-	return imgPoints;
-	*/
+	return (a->x) < (b->x);
 }
 
 Mat Reconstructor::reprojectVoxels2(Mat &frame, int camera)
@@ -319,11 +236,12 @@ Mat Reconstructor::reprojectVoxels2(Mat &frame, int camera)
 
 Mat Reconstructor::reprojectVoxels2(Mat &frame, int camera,int occlusionCheck)
 {
-	cout<<"Reprojecting voxels for camera "<<camera<<endl;
+	//cout<<"Reprojecting voxels for camera "<<camera<<endl;
 	
-	vector<Voxel*> voxels = getVisibleVoxels();
-	Point3f camLoc = getCameras()[camera]->getCameraLocation();
-	cout<<"Visible voxels: "<<voxels.size()<<endl;
+	vector<Voxel*> voxels = _visible_voxels;
+	//std::sort(voxels.begin(),voxels.end(),Reconstructor::xvalue);
+	Point3f camLoc = _cameras[camera]->getCameraLocation();
+	//cout<<"Visible voxels: "<<voxels.size();
 	float distBase, distComp;
 	Voxel* voxBase;
 	Voxel* voxComp;
@@ -331,7 +249,7 @@ Mat Reconstructor::reprojectVoxels2(Mat &frame, int camera,int occlusionCheck)
 	float neigh = 0;
 	if(occlusionCheck != 0)
 	{
-		neigh = 25;
+		neigh = 9;
 	}
 
 	int iter;
@@ -342,7 +260,7 @@ Mat Reconstructor::reprojectVoxels2(Mat &frame, int camera,int occlusionCheck)
 	//cout<<"frame.size() "<< frame.size()<<endl;
 	for (int base=0; base<voxels.size();base++)
 	{		
-		
+		if( (voxels[base]->z >= 700) && (voxels[base]->z <= 1600)){
 		//check if image projection is already present
 		Point projection = voxels[base] ->camera_projection[camera];
 		
@@ -364,7 +282,9 @@ Mat Reconstructor::reprojectVoxels2(Mat &frame, int camera,int occlusionCheck)
 				//cout<<"Yes!"<<endl;
 				//} else { cout<<"No"<<endl;
 			}
-		} else if (occlusionCheck ==0 )
+		} 
+		
+		if (occlusionCheck ==0 )
 		{
 			imgRepr[projection.x][projection.y] = base+1;
 		} else
@@ -390,12 +310,12 @@ Mat Reconstructor::reprojectVoxels2(Mat &frame, int camera,int occlusionCheck)
 			distComp = distBase + 10;
 			// check all entries subsequently
 			iter =-1;
-			while( (distBase - distComp)<200 && iter<neigh)
+			while( (distBase - distComp)<500 && iter<neigh)
 			{
-				if (iter>-1 && abs(distBase - distComp)>200 ) neighbour[iter]=0;
+				if (iter>-1 && abs(distBase - distComp)>500 ) neighbour[iter]=0;
 				iter++;
 				// skip self and 0 entries
-				if ( (iter != (neigh-1)/2) && (neighbour[iter] > 0) )
+				if ( (iter != (neigh-1)/2) && iter!=neigh && (neighbour[iter] > 0) )
 				{ 
 					//check of current entry
 					voxComp = voxels[neighbour[iter]-1];
@@ -429,9 +349,9 @@ Mat Reconstructor::reprojectVoxels2(Mat &frame, int camera,int occlusionCheck)
 			}
 			//cout<<endl;
 		}
+		}
 	}
 	
-	cout<< ". . done!"<<endl;
 	vector<Voxel*> repVoxels;
 	Mat mask(frame.size(),CV_8U);
 	mask = uchar(0);
@@ -448,7 +368,7 @@ Mat Reconstructor::reprojectVoxels2(Mat &frame, int camera,int occlusionCheck)
 			 }
 		}
     }
-	cout<<"Repr voxels: "<<repVoxels.size()<<endl;
+	//cout<<" Repr voxels: "<<repVoxels.size()<<endl;
 
 	setProjectableVoxels(repVoxels,camera);
 	//return imgRepr;
