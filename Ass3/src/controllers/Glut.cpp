@@ -215,7 +215,13 @@ void Glut::mainLoopWindows()
 
 	//reset current frame to 0
 	_glut->getScene3d().setCurrentFrame(0);
-
+	
+	//initialise textfile
+	ofstream myfile;
+	myfile.open ("trackcenters.txt", ios::out | ios::trunc); 
+	myfile << "FrameNr \t Person 1 \t\t Person 2 \t\t Person 3 \t\t Person 4 \n";
+	myfile << "\t x \t y   \t   x \t y   \t   x \t y   \t   x \t y   \n";
+	myfile.close();
 	while(!_glut->getScene3d().isQuit())
 	{
 		// get the centers based on cModels
@@ -1024,7 +1030,12 @@ Mat Glut::getColorModel(Mat image,int camera, int label)
 void Glut::calculateSubjectCenters(vector<Mat> cModels){
 
 	//initialize required variables
-	vector<Reconstructor::Voxel*> voxels;
+	vector<Reconstructor::Voxel*> voxels = getScene3d().getReconstructor().getVisibleVoxels();
+	for (size_t v=0;v<voxels.size();v++)
+	{ 
+		voxels[v]->label = -1;
+	}
+	getScene3d().getReconstructor().setVisibleVoxels(voxels);
 	Mat frame, frameHSV;
 	vector<float> centersx(4,0.0);
 	vector<float> centersy(4,0.0);
@@ -1063,6 +1074,8 @@ void Glut::calculateSubjectCenters(vector<Mat> cModels){
 	//set the new centers
 	_glut -> getScene3d().getReconstructor().setCenters(centers);
 
+	display();
+	waitKey(1000);
 	//// //// DONE WITH INITIAL LABELING //// /// //// /// //// 
 
 	voxels = _glut->getScene3d().getReconstructor().getVisibleVoxels();
@@ -1088,7 +1101,10 @@ void Glut::calculateSubjectCenters(vector<Mat> cModels){
 		}
 	}
 
+
 	//determine center for each label
+	elementCount.assign(4,0.0);
+	for(int i = 0 ; i < voxels.size(); i++) elementCount[voxels[i] -> label]++;
 	centersx.assign(4,0.0);
 	centersy.assign(4,0.0);
 	for(int i = 0; i < voxels.size(); i++){
@@ -1100,6 +1116,19 @@ void Glut::calculateSubjectCenters(vector<Mat> cModels){
 	for(int i = 0; i< centers.size(); i++) centers[i] = Point2f(centersx[i],centersy[i]);
 
 	_glut -> getScene3d().getReconstructor().setCenters(centers);
+	display();
+	waitKey(500);
+
+	//write centers
+	ofstream myfile;
+	myfile.open ("trackcenters.txt", ios::out | ios::app); 
+	myfile << getScene3d().getCurrentFrame()<<"\t";
+	for (int i=0;i<centers.size();i++)
+	{
+		myfile << centers[i].x << "\t"<<centers[i].y<<"\t";
+	}
+	myfile << "\n";
+	myfile.close();
 }
 
 // assign the inputColor with the label of the colorModel closest to it

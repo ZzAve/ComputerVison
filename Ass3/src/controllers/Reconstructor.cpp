@@ -390,10 +390,10 @@ Mat Reconstructor::reprojectVoxels2(Mat &frame, int camera,int occlusionCheck)
 			distComp = distBase + 10;
 			// check all entries subsequently
 			iter =-1;
-			while(distBase < distComp && iter<neigh)
+			while( (distBase - distComp)<100 && iter<neigh)
 			{
+				if (iter>-1 && (distComp - distBase)>-100 ) neighbour[iter]=0;
 				iter++;
-			    //cout<< iter<<" ";
 				// skip self and 0 entries
 				if ( (iter != (neigh-1)/2) && (neighbour[iter] > 0) )
 				{ 
@@ -402,12 +402,7 @@ Mat Reconstructor::reprojectVoxels2(Mat &frame, int camera,int occlusionCheck)
 
 					distComp = sqrt((camLoc.x - voxComp->x)*(camLoc.x - voxComp->x)  + (camLoc.y - voxComp->y)*(camLoc.y - voxComp->y) 
 						+ (camLoc.z - voxComp->z)*(camLoc.z - voxComp->z));
-
-					if (abs(distBase - distComp)<200)
-					{
-						neighbour[iter] = 0;
-						distComp = distBase + 10;
-					}
+					cout<< distBase <<  " vs "<<distComp<<endl; 
 				}
 			}
 
@@ -419,8 +414,11 @@ Mat Reconstructor::reprojectVoxels2(Mat &frame, int camera,int occlusionCheck)
 				{
 					for (int j=0;j<(int)sqrt(neigh);j++)
 					{
-						if( (projection.x + (i-((int)sqrt(neigh)-2)) > 0) && (projection.x + (i-((int)sqrt(neigh)-2)) < imgRepr.size()) 
-							&& (projection.y + (j-((int)sqrt(neigh)-2)) > 0) && (projection.y + (j-((int)sqrt(neigh)-2)) < imgRepr[0].size()) )
+						if( neighbour[(sqrt(neigh)*i)+j]!= 0  //entry was not zero
+							&& (projection.x + (i-((int)sqrt(neigh)-2)) > 0) //and entry in imgRepr exists (positive x)
+							&& (projection.x + (i-((int)sqrt(neigh)-2)) < imgRepr.size())  //not larger than largest x
+								&& (projection.y + (j-((int)sqrt(neigh)-2)) > 0)  // positive y
+								&& (projection.y + (j-((int)sqrt(neigh)-2)) < imgRepr[0].size()) ) //not larger than largest y
 						{
 							imgRepr[projection.x + (i-((int)sqrt(neigh)-2))][projection.y + (j-((int)sqrt(neigh)-2))] = 0;
 						}
