@@ -966,109 +966,39 @@ void Glut::drawInfo()
 #endif
 }
 
-
-
-Scalar Glut::getColorModelMean(Mat &image, Mat &targetPoints,int camera, int label)
-{
-
-	vector<Reconstructor::Voxel*> projVoxels =_glut->getScene3d().getReconstructor().getProjectableVoxels(camera);
-	//cout << "number of projected voxels"<<projVoxels.size() << endl;
-	Mat hsv;
-	cvtColor(image,hsv,CV_BGR2HSV);
-	Mat mask(hsv.size(),CV_8U);
-	mask= uchar(0);
-	for(size_t v=0;v<projVoxels.size();v++)
-	{
-		if (projVoxels[v]->label == label)
-		{
-			mask.at<uchar>(projVoxels[v]->camera_projection[camera]) = 1;
-			//cout<< projVoxels[v]->camera_projection[camera].x << endl;
-			//cout<< projVoxels[v]->camera_projection[camera].y << endl;
-			//mask.at<int>(projVoxels[v]->camera_projection[camera].x+1,projVoxels[v]->camera_projection[camera].y) = 1;
-			//mask.at<int>(projVoxels[v]->camera_projection[camera].y+1,projVoxels[v]->camera_projection[camera].x-1) = 1;
-			//mask.at<int>(projVoxels[v]->camera_projection[camera].y+1,projVoxels[v]->camera_projection[camera].x+1) = 1;
-			//mask.at<int>(projVoxels[v]->camera_projection[camera].x,projVoxels[v]->camera_projection[camera].y-1) = 1;
-			//mask.at<int>(projVoxels[v]->camera_projection[camera].x,projVoxels[v]->camera_projection[camera].y+1) = 1;
-			//mask.at<int>(projVoxels[v]->camera_projection[camera].x-1,projVoxels[v]->camera_projection[camera].y) = 1;
-			//mask.at<int>(projVoxels[v]->camera_projection[camera].y-1,projVoxels[v]->camera_projection[camera].x-1) = 1;
-			//mask.at<int>(projVoxels[v]->camera_projection[camera].y-1,projVoxels[v]->camera_projection[camera].x+1) = 1;
-		}
-	}
-
-	
-	cout<<"Get Color Model ";
-	imshow("Image without mask",hsv);
-	Mat hsvMasked;
-	hsv.copyTo(hsvMasked,mask);
-	imshow("Image with mask",hsvMasked);
-	
-	cout<<"Get mean color ";
-	Scalar meanColor = mean(hsv);
-	Scalar meanColorM = mean(hsv,mask);
-	cout<< "Mean color (unmasked) : "<<meanColor<< " (masked) : "<< meanColorM<<endl;
-	
-	// draw mean color on image
-	rectangle(hsv,Point(0,0),Point(100.0,100.0),meanColor,CV_FILLED);
-	imshow("Image without mask",hsv);
-	rectangle(hsvMasked,Point(0,0),Point(100.0,100.0),meanColor,CV_FILLED);
-	imshow("Image with mask",hsvMasked);
-
-	cout<< " |. ";
-	waitKey();
-	return meanColorM;
-	
-}
-
-//getColorModel
-//
-// 
-// targetPoints contains a vectorlist of Point2f objects, 
-// given for a certain label and a certain view
-//
+//Calculate colormodel in the form of an HSV histogram, given an image, camera and label
 Mat Glut::getColorModel(Mat image,int camera, int label)
 {
-
+	//retrieve all projectable, non-occluded pixels for camera
 	vector<Reconstructor::Voxel*> projVoxels =_glut->getScene3d().getReconstructor().getProjectableVoxels(camera);
-	cout << getScene3d().getCurrentFrame() << endl;
+
+	//convert image to HSV and initialize mask
 	Mat hsv;
 	cvtColor(image,hsv,CV_BGR2HSV);
 	Mat mask(hsv.size(),CV_8U);
 	mask= uchar(0);
+
+	//for all voxels,
 	for(size_t v=0;v<projVoxels.size();v++)
 	{
+		//check if they belong to the correct label,
 		if (projVoxels[v]->label == label)
 		{
+			//if so, set maskvalue to 1, to include this pixel in the colormodel
 			mask.at<uchar>(projVoxels[v]->camera_projection[camera]) = 1;
 		}
 	}
 
-	//cout<<"Get Color Model ";
-	//imshow("Image without mask",hsv);
-	// hsvMasked;
-	//hsv.copyTo(hsvMasked,mask);
-	//imshow("Image with mask",hsvMasked);
-	
-	 // Quantize the hue to 30 levels
-    // and the saturation to 32 levels
+	//set all values for the generation of the histogram
     int hbins = 30, sbins = 32;
     int histSize[] = {hbins, sbins};
-    
-	// hue varies from 0 to 179, see cvtColor
     float hranges[] = { 0, 180 };
-    
-	// saturation varies from 0 (black-gray-white) to
-    // 255 (pure spectrum color)
     float sranges[] = { 0, 256 };
-    const float* ranges[] = { hranges, sranges };
-    
+    const float* ranges[] = { hranges, sranges }; 
 	MatND hist;
-    // we compute the histogram from the 0-th and 1-st channels
     int channels[] = {0, 1};
 
-    calcHist( &hsv, 1, channels, mask,
-             hist, 2, histSize, ranges,
-             true, // the histogram is uniform
-             false );
+    calcHist( &hsv, 1, channels, mask, hist, 2, histSize, ranges, true, false );
     
 	
 	double maxVal=0;
@@ -1088,14 +1018,6 @@ Mat Glut::getColorModel(Mat image,int camera, int label)
                         CV_FILLED );
         }
 
-	//namedWindow( "Source", 1 );
-    //imshow( "Source", image );
-
-   // namedWindow( "H-S Histogram", 1 );
-    //imshow( "H-S Histogram", histImg );
-	
-	//cout << "histogram voor label "<< label << endl;	
-	
     return hist;
 }
 
