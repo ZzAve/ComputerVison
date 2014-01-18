@@ -189,11 +189,11 @@ void Glut::mainLoopWindows()
 	display();
 	//Get correct frame
 	int frameNr = 306;
-	getScene3d().setCurrentFrame(frameNr);
+	_glut->getScene3d().setCurrentFrame(frameNr);
 	update(0);
 	//perform kmeans to get 4 clusters
 	Mat centers;
-	getScene3d().getReconstructor().calculatekMeans();
+	_glut->getScene3d().getReconstructor().calculatekMeans();
 	
 	//create color model based on clusters
 	Scalar meann;
@@ -201,8 +201,8 @@ void Glut::mainLoopWindows()
 	Mat frame, imagePoints;
 	
 	int c=3;
-	frame = getScene3d().getCameras()[c] -> getFrame();
-	imagePoints = getScene3d().getReconstructor().reprojectVoxels2(frame,c,0);
+	frame = _glut->getScene3d().getCameras()[c] -> getFrame();
+	imagePoints = _glut->getScene3d().getReconstructor().reprojectVoxels2(frame,c,0);
 	cout<<"imagePoints.size(): " <<imagePoints.size()<<endl;
 	for (int label=0; label<4;label++)
 	{
@@ -214,7 +214,7 @@ void Glut::mainLoopWindows()
 	//Then go!
 
 	//reset current frame to 0
-	getScene3d().setCurrentFrame(0);
+	_glut->getScene3d().setCurrentFrame(0);
 
 	while(!_glut->getScene3d().isQuit())
 	{
@@ -1128,8 +1128,8 @@ void Glut::calculateSubjectCenters(vector<Mat> cModels){
 
 	display();
 	waitKey(100);
-	voxels = getScene3d().getReconstructor().getVisibleVoxels();
-	getScene3d().getReconstructor().setVisibleVoxels(voxels);
+	
+	//getScene3d().getReconstructor().setVisibleVoxels(voxels);
 
 	//determine center for each label
 	vector<float> elementCount(4,0.0);
@@ -1153,20 +1153,24 @@ void Glut::calculateSubjectCenters(vector<Mat> cModels){
 	//return centers
 	_glut -> getScene3d().getReconstructor().setCenters(centers);
 
+	voxels = _glut->getScene3d().getReconstructor().getVisibleVoxels();
 	for(int i = 0 ; i < voxels.size(); i++) {
 
 		float dist=sqrt((centersx[0]-voxels[i] ->x)*(centersx[0]-voxels[i] ->x) + (centersy[0]-voxels[i] ->y)*(centersy[0]-voxels[i] ->y));
 		voxels[i] -> label = 0;
 		for (int l = 1; l < centers.size(); l++)
 		{
-			if( dist > sqrt((centersx[l]-voxels[i] ->x)*(centersx[l]-voxels[i] ->x) + (centersy[l]-voxels[i] ->y)*(centersy[l]-voxels[i] ->y)))
+			float newDist =  sqrt((centersx[l]-voxels[i] ->x)*(centersx[l]-voxels[i] ->x) + (centersy[l]-voxels[i] ->y)*(centersy[l]-voxels[i] ->y));
+			if( dist > newDist)
 			{
 			voxels[i] -> label = l;
-			dist = sqrt((centersx[l]-voxels[i] ->x)*(centersx[l]-voxels[i] ->x) + (centersy[l]-voxels[i] ->y)*(centersy[l]-voxels[i] ->y));
+			dist = newDist;
 
 			}
 		}
 	}
+
+	getScene3d().getReconstructor().setVisibleVoxels(voxels);
 }
 
 int Glut::getClosestModel(vector<Mat> cModels,cv::Vec3b inputColor){
