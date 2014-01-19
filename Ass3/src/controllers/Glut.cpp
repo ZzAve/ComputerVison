@@ -1194,10 +1194,11 @@ void Glut::calculateSubjectCenters(vector<Mat> cModels){
 				Point resp = voxels[i]->camera_projection[camNr];
 				mask.at<uchar>(resp ) = 1;
 				dilate(mask,masked, Mat(), Point(-1, -1),1);
-
-				Mat model = getHistoGram(frame,masked);
-				//voxels[i]->label = getClosestModel(cModels, frameHSV.at<Vec3b>(voxels[i] -> camera_projection[camNr]));
-				voxels[i]->label = getClosestModel2(cModels, model);
+				Scalar color = mean(frameHSV,mask);
+				//Mat model = getHistoGram(frame,masked);
+				voxels[i]->label = getClosestModel(cModels, frameHSV.at<Vec3b>(resp));
+				voxels[i]->label = getClosestModel3(cModels, color);
+				//voxels[i]->label = getClosestModel2(cModels, model);
 			}
 		}
 		getScene3d().getReconstructor().setProjectableVoxels(voxels,camNr);
@@ -1321,6 +1322,28 @@ int Glut::getClosestModel2(vector<Mat> cModels,Mat pixel)
 		}
 	}
 	return curLabel;
+}
+
+int Glut::getClosestModel3(vector<Mat> cModels,cv::Scalar inputColor)
+{
+	//Set initial values to first label, and score of the color in first colorModel
+	float score = cModels[0].at<float>(inputColor[0]/6,inputColor[1]/8);
+	int label = 0;
+
+	//for the other color models,
+	for (int i = 1; i<cModels.size(); i++)
+	{
+		//check if they score better for inputColor
+		if( score < cModels[i].at<float>(inputColor[0]/6,inputColor[1]/8))
+		{
+			//if so, set label to the better model, and update it's score
+			label = i;
+			score = cModels[i].at<float>(inputColor[0]/6,inputColor[1]/8);
+		}
+	}
+
+	//return the index of the best color model
+	return label;
 }
 
 // assign the inputColor with the label of the colorModel closest to it

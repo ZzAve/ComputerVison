@@ -62,6 +62,7 @@ public:
 	cv::Scalar getColorModelMean(cv::Mat &,cv::Mat&,int,int);
 	void calculateSubjectCenters(cv::vector<cv::Mat>);
 	int getClosestModel(cv::vector<cv::Mat>,cv::Vec3b);
+	int getClosestModel3(cv::vector<cv::Mat>,cv::Scalar);
 	int getClosestModel2(std::vector<cv::Mat> ,cv::Mat);
 	cv::Mat getHistoGram(cv::Mat, cv::Mat);
 
