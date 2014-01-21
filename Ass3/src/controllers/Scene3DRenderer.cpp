@@ -23,7 +23,7 @@ Scene3DRenderer::Scene3DRenderer(Reconstructor &r, const vector<Camera*> &cs) :
 	_height = 480;
 	_quit = false;
 	_paused = false;
-	_rotate = false;
+	_rotate = true;
 	_camera_view = true;
 	_show_volume = true;
 	_show_grd_flr = true;
@@ -76,7 +76,14 @@ Scene3DRenderer::Scene3DRenderer(Reconstructor &r, const vector<Camera*> &cs) :
 	createTrackbar("Erosion2", VIDEO_WINDOW, &_e2_iterations, 20);
 
 	createFloorGrid();
-	setTopView();
+	
+	_camera_view = false;
+	if (_current_camera != -1) _previous_camera = _current_camera;
+	_current_camera = -1;
+
+	_arcball_eye = vec(5000.0f, -5000.0f, 5000.0f);
+	_arcball_centre = vec(0.0f, 0.0f, 0.0f);
+	_arcball_up = vec(0.0f, 0.0f, 1.0f);
 }
 
 /**

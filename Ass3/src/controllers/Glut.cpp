@@ -188,13 +188,15 @@ void Glut::mainLoopWindows()
 	update(0);
 	display();
 	//Get correct frame
-	int frameNr = 306;
+	int frameNr = 303;
 	_glut->getScene3d().setCurrentFrame(frameNr);
 	update(0);
 	//perform kmeans to get 4 clusters
 	Mat centers;
 	_glut->getScene3d().getReconstructor().calculatekMeans();
-	
+	display();
+	cout<<"Kmeans "<<endl;
+	waitKey();
 	//create color model based on clusters
 	Scalar meann;
 	vector<Mat> cModels(4);
@@ -607,7 +609,7 @@ void Glut::update(int v)
 	if (!scene3d.isPaused())
 	{
 		// If not paused move to the next frame
-		scene3d.setCurrentFrame(scene3d.getCurrentFrame() + 1);
+		scene3d.setCurrentFrame(scene3d.getCurrentFrame() + 4);
 	}
 	if (scene3d.getCurrentFrame() != scene3d.getPreviousFrame())
 	{
@@ -650,14 +652,21 @@ void Glut::update(int v)
 	// Concatenate the video frame with the foreground image (of set camera)
 	if (!canvas.empty() && !foreground.empty())
 	{
-		Mat fg_im_3c;
-		cvtColor(foreground, fg_im_3c, CV_GRAY2BGR);
-		hconcat(canvas, fg_im_3c, canvas);
-		imshow(VIDEO_WINDOW, canvas);
+		//Mat fg_im_3c;
+		//cvtColor(foreground, fg_im_3c, CV_GRAY2BGR);
+		//hconcat(canvas, fg_im_3c, canvas);
+		//imshow(VIDEO_WINDOW, canvas);
+		Mat cameras = scene3d.getCameras()[0]->getFrame();
+		vconcat(cameras,scene3d.getCameras()[1]->getFrame(),cameras);
+		vconcat(cameras,scene3d.getCameras()[2]->getFrame(),cameras);
+		vconcat(cameras,scene3d.getCameras()[3]->getFrame(),cameras);
+		
+		
+		imshow("Sources",cameras);
 	}
 	else if (!canvas.empty())
 	{
-		imshow(VIDEO_WINDOW, canvas);
+		//imshow(VIDEO_WINDOW, canvas);
 	}
 
 	// Update the frame slider position
@@ -1194,15 +1203,11 @@ void Glut::calculateSubjectCenters(vector<Mat> cModels){
 				Point resp = voxels[i]->camera_projection[camNr];
 				mask.at<uchar>(resp ) = 1;
 				dilate(mask,masked, Mat(), Point(-1, -1),1);
-				Scalar color = mean(frameHSV,mask);
-				//Mat model = getHistoGram(frame,masked);
-				voxels[i]->label = getClosestModel(cModels, frameHSV.at<Vec3b>(resp));
+				Scalar color = mean(frameHSV,masked);
 				voxels[i]->label = getClosestModel3(cModels, color);
-				//voxels[i]->label = getClosestModel2(cModels, model);
 			}
 		}
 		getScene3d().getReconstructor().setProjectableVoxels(voxels,camNr);
-		display();
 	}
 	cout<<endl;
 	
@@ -1230,14 +1235,12 @@ void Glut::calculateSubjectCenters(vector<Mat> cModels){
 	//set the new centers
 	getScene3d().getReconstructor().setCenters(centers);
 	cout <<"First centers: " <<endl 
-		<<  centers[0] <<endl 
-		<<  centers[1] <<endl 
-		<<  centers[2] <<endl 
-		<<  centers[3] <<endl;
-	display();
-	waitKey();
+		<< " 1: ["<< (int)centers[0].x<<", " << (int)centers[0].y<<"]"
+		<< " 2: ["<< (int)centers[1].x<<", " << (int)centers[1].y<<"]"
+		<< " 3: ["<< (int)centers[2].x<<", " << (int)centers[2].y<<"]"
+		<< " 4: ["<< (int)centers[3].x<<", " << (int)centers[3].y<<"]"<<endl;
 	//// //// DONE WITH INITIAL LABELING //// /// //// /// //// 
-	/*
+	
 	voxels = getScene3d().getReconstructor().getVisibleVoxels();
 	float dist, newDist;
 	
@@ -1262,8 +1265,6 @@ void Glut::calculateSubjectCenters(vector<Mat> cModels){
 				}
 			}
 		}
-
-	
 		getScene3d().getReconstructor().setVisibleVoxels(voxels);
 
 		//determine center for each label
@@ -1283,14 +1284,13 @@ void Glut::calculateSubjectCenters(vector<Mat> cModels){
 	
 
 	getScene3d().getReconstructor().setCenters(centers);
-	cout <<"Second centers: " <<endl 
-		<<  centers[0] <<endl 
-		<<  centers[1] <<endl 
-		<<  centers[2] <<endl 
-		<<  centers[3] <<endl;
-	display();
-	waitKey(300);
-	*/
+	cout <<"Final centers: " <<endl 
+		<< " 1: ["<< (int)centers[0].x<<", " << (int)centers[0].y<<"]"
+		<< " 2: ["<< (int)centers[1].x<<", " << (int)centers[1].y<<"]"
+		<< " 3: ["<< (int)centers[2].x<<", " << (int)centers[2].y<<"]"
+		<< " 4: ["<< (int)centers[3].x<<", " << (int)centers[3].y<<"]"<<endl;
+	
+	
 	//write centers
 	ofstream myfile;
 	myfile.open ("trackcenters.txt", ios::out | ios::app |ios::binary); 
@@ -1304,25 +1304,6 @@ void Glut::calculateSubjectCenters(vector<Mat> cModels){
 }
 
 
-int Glut::getClosestModel2(vector<Mat> cModels,Mat pixel)
-{
-	double curBest= compareHist(cModels[0],pixel,CV_COMP_CHISQR);	
-	double res;
-
-	int curLabel=0;
-	for (int label=1;label<4;label++)
-	{
-		//cout<<label << " -th comparison ";
-		res = compareHist(cModels[label],pixel,CV_COMP_CHISQR);	
-		//cout<<res << " < "<<curBest << " = " << (res<curBest)<<endl;
-		if (res < curBest)
-		{
-			curBest = res;
-			curLabel = label;
-		}
-	}
-	return curLabel;
-}
 
 int Glut::getClosestModel3(vector<Mat> cModels,cv::Scalar inputColor)
 {
@@ -1346,26 +1327,4 @@ int Glut::getClosestModel3(vector<Mat> cModels,cv::Scalar inputColor)
 	return label;
 }
 
-// assign the inputColor with the label of the colorModel closest to it
-int Glut::getClosestModel(vector<Mat> cModels,cv::Vec3b inputColor){
-
-	//Set initial values to first label, and score of the color in first colorModel
-	float score = cModels[0].at<float>(inputColor.val[0],inputColor.val[1]);;
-	int label = 0;
-
-	//for the other color models,
-	for (int i = 1; i<cModels.size(); i++)
-	{
-		//check if they score better for inputColor
-		if( score < cModels[i].at<float>(inputColor.val[0],inputColor.val[1]))
-		{
-			//if so, set label to the better model, and update it's score
-			label = i;
-			score = cModels[i].at<float>(inputColor.val[0],inputColor.val[1]);
-		}
-	}
-
-	//return the index of the best color model
-	return label;
-}
 } /* namespace nl_uu_science_gmt */

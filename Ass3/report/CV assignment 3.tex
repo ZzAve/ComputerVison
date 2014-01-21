@@ -1,0 +1,96 @@
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% Short Sectioned Assignment
+% LaTeX Template
+% Version 1.0 (5/5/12)
+%
+% This template has been downloaded from:
+% http://www.LaTeXTemplates.com
+%
+% Original author:
+% Frits Wenneker (http://www.howtotex.com)
+%
+% License:
+% CC BY-NC-SA 3.0 (http://creativecommons.org/licenses/by-nc-sa/3.0/)
+%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%----------------------------------------------------------------------------------------
+%	PACKAGES AND OTHER DOCUMENT CONFIGURATIONS
+%----------------------------------------------------------------------------------------
+
+\documentclass[paper=a4, fontsize=11pt]{scrartcl} % A4 paper and 11pt font size
+
+\usepackage[T1]{fontenc} % Use 8-bit encoding that has 256 glyphs
+\usepackage{fourier} % Use the Adobe Utopia font for the document - comment this line to return to the LaTeX default
+\usepackage[english, dutch]{babel} % English language/hyphenation
+\usepackage{amsmath,amsfonts,amsthm} % Math packages
+
+\usepackage{lipsum} % Used for inserting dummy 'Lorem ipsum' text into the template
+
+\usepackage{sectsty} % Allows customizing section commands
+\allsectionsfont{\centering \normalfont\scshape} % Make all sections centered, the default font and small caps
+
+\usepackage{fancyhdr} % Custom headers and footers
+\pagestyle{fancyplain} % Makes all pages in the document conform to the custom headers and footers
+\fancyhead{} % No page header - if you want one, create it in the same way as the footers below
+\fancyfoot[L]{} % Empty left footer
+\fancyfoot[C]{} % Empty center footer
+\fancyfoot[R]{\thepage} % Page numbering for right footer
+\renewcommand{\headrulewidth}{0pt} % Remove header underlines
+\renewcommand{\footrulewidth}{0pt} % Remove footer underlines
+\setlength{\headheight}{13.6pt} % Customize the height of the header
+
+\numberwithin{equation}{section} % Number equations within sections (i.e. 1.1, 1.2, 2.1, 2.2 instead of 1, 2, 3, 4)
+\numberwithin{figure}{section} % Number figures within sections (i.e. 1.1, 1.2, 2.1, 2.2 instead of 1, 2, 3, 4)
+\numberwithin{table}{section} % Number tables within sections (i.e. 1.1, 1.2, 2.1, 2.2 instead of 1, 2, 3, 4)
+
+%\setlength\parindent{0pt} % Removes all indentation from paragraphs - comment this line for an assignment with lots of text
+
+%----------------------------------------------------------------------------------------
+%	TITLE SECTION
+%----------------------------------------------------------------------------------------
+
+\newcommand{\horrule}[1]{\rule{\linewidth}{#1}} % Create horizontal rule command with 1 argument of height
+
+\title{	
+\normalfont \normalsize 
+\textsc{Universiteit Utrecht, Department of Information and Computing Sciences} \\ [25pt] % Your university, school and/or department name(s)
+\horrule{0.5pt} \\[0.4cm] % Thin top horizontal rule
+\huge Assignment 3 - Voxel-based Tracking \\ % The assignment title
+\horrule{2pt} \\[0.5cm] % Thick bottom horizontal rule
+}
+
+\author{Julius van Dis 4038010, Nico Naus, 3472353} % Your name
+
+\date{\normalsize\today} % Today's date or a custom date
+
+\begin{document}
+
+\maketitle % Print the title
+
+%----------------------------------------------------------------------------------------
+%	PROBLEM 1
+%----------------------------------------------------------------------------------------
+\section{Coding}
+
+\subsection{Offline}
+In order to generate the color models, we set the video to a frame that has each subject well separated, and a camera that has a good view. We chose for frame 306, and camera 4.
+
+We use the build-in openCV function kMeans to generate the initial centers, and then generate a histogram using the hue and saturation. With 30 and 32 bins respectively. We neglected the third parameter, the value, since its significance was small. This gives us the advantage that we have to deal with less data for doing comparisons. 
+
+The reason we chose histograms above mean color or GMMs is because we believed that a more detailed model would give us better results. Although our video showed people with only one or two colors, we believed that the histogram could give us more insight. And to improve the model, we have only considered the voxels between 70cm and 160cm.
+
+\subsection{Online}
+For the tracking of persons, we wrote the function calculateSubjectCenters. This function takes the color model, generated in the offline part, and uses it to calculate new centers. It gets the non-occluded voxels for each camera, and compares the pixel values to the models. In the reprojection step occlusion is taken care of independently for every camera. The function reprojectVoxels2 was written for that purpose. For every voxel, it is checked whether the pixel that is would be reprojected on is already taken by another voxel. If so, the voxel that is closest to the camera gets the 'spot', and the other one is rejected/not used any more for reprojection. In order to prevent even more occlusion, a neighbourhood search is performed as well, where the 8 surrounding pixels are also checked for reprojection. If so, only reprojected voxels which are not more than $50$ cm away from the just projected voxel are allowed.
+
+The reprojected voxels are all being labelled by checking the representative pixel + neighbourhood and compare it with the color models. The color model that fits the reprojection best wins, and the respective label is set. Once a voxel is labeled by one of the cameras, no other camera can relabel it any more. And because the color model was based on camera 4, that camera is the first that checks the reprojected voxels.
+
+This initial labelling is shown in the one of the videos (see the shortcut links), whilst the other shows the final labelling. The initial centers are based on the initial labelling, whereas the final labelling has relabelled all voxels based on the closest distance to one of the centers.
+
+\section{Results}
+Because of runtime, we have chosen to update the result by showing not every frame, but every 4 frames. 
+
+When looking at the video of the final labelling, one can see that that sometimes persons come and go or get merged into one person. These are results of the persons getting out of view of at least one of the cameras or because of standing in positions such that multiple cameras cannot discriminate the two subjects from being two different persons.
+
+
+\end{document}
