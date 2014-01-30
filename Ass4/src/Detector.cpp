@@ -6,7 +6,13 @@
  */
 
 #include "Detector.h"
-
+#include <iostream>
+#include <fstream>
+#include <string>
+//#include <opencv2/gpu/gpu.hpp>
+#include "opencv2/imgproc/imgproc.hpp";
+#include "opencv2/objdetect/objdetect.hpp";
+#include "opencv2/highgui/highgui.hpp";
 using namespace cv;
 using namespace std;
 using namespace boost;
@@ -43,6 +49,8 @@ struct ascending
 	}
 };
 
+
+
 Detector::Detector(const std::string &qif) :
 		_pos_amount(Detector::cfg()->getValue<int>("settings/images@amount")), _target_width(
 				Detector::cfg()->getValue<int>("settings/images@width")), _posneg_factor(
@@ -73,6 +81,230 @@ Detector::Detector(const std::string &qif) :
 Detector::~Detector()
 {
 }
+
+
+vector<float> HOGmodel(Mat &img_raw,Mat &result)
+{
+	Mat img;
+	Mat raw = img_raw.clone();
+	cv::resize(raw, img, Size(64,128) );
+	cv::imshow("test",img);
+	cv::waitKey();
+ 
+	HOGDescriptor d;
+	// Size(128,64), //winSize
+	// Size(16,16), //blocksize
+	// Size(8,8), //blockStride,
+	// Size(8,8), //cellSize,
+	// 9, //nbins,
+	// 0, //derivAper,
+	// -1, //winSigma,
+	// 0, //histogramNormType,
+	// 0.2, //L2HysThresh,
+	// 0 //gammal correction,
+	// //nlevels=64
+	//);
+ 
+	//void HOGDescriptor::compute(const Mat& img, vector<float>& descriptors,
+	//                             Size winStride, Size padding,
+	//                             const vector<Point>& locations) const
+	vector<float> descriptorsValues;
+	vector<Point> locations;
+		d.compute( img, descriptorsValues, Size(0,0), Size(0,0), locations);
+ 
+	cout << "HOG descriptor size is " << d.getDescriptorSize() << endl;
+	cout << "img dimensions: " << img.cols << " width x " << img.rows << "height" << endl;
+	cout << "Found " << descriptorsValues.size() << " descriptor values" << endl;
+	cout << "Nr of locations specified : " << locations.size() << endl;
+
+	//result = get_hogdescriptor_visual_image(img_raw, descriptorsValues,Size(128,64),Size(8,8),1,1.0);
+
+
+// HOGDescriptor visual_imagealizer
+// adapted for arbitrary size of feature sets and training images
+//Mat get_hogdescriptor_visual_image(Mat& origImg,
+//                                   vector<float>& descriptorValues,
+//                                   Size winSize,
+//                                   Size cellSize,                                   
+//                                  int scaleFactor,
+//                                   double viz_factor)
+  
+	Mat& origImg = raw;
+	Size winSize = Size(128,64);
+	Size cellSize = Size(8,8);
+	int scaleFactor =1;
+	double viz_factor = 1.0;
+	vector<float>& descriptorValues = descriptorsValues;
+
+    Mat visual_image;
+    resize(origImg, visual_image, Size(origImg.cols*scaleFactor, origImg.rows*scaleFactor));
+ 
+    int gradientBinSize = 9;
+    // dividing 180° into 9 bins, how large (in rad) is one bin?
+    float radRangeForOneBin = 3.14/(float)gradientBinSize; 
+ 
+    // prepare data structure: 9 orientation / gradient strenghts for each cell
+	int cells_in_x_dir = winSize.width / cellSize.width;
+    int cells_in_y_dir = winSize.height / cellSize.height;
+    int totalnrofcells = cells_in_x_dir * cells_in_y_dir;
+    float*** gradientStrengths = new float**[cells_in_y_dir];
+    int** cellUpdateCounter   = new int*[cells_in_y_dir];
+    for (int y=0; y<cells_in_y_dir; y++)
+    {
+        gradientStrengths[y] = new float*[cells_in_x_dir];
+        cellUpdateCounter[y] = new int[cells_in_x_dir];
+        for (int x=0; x<cells_in_x_dir; x++)
+        {
+            gradientStrengths[y][x] = new float[gradientBinSize];
+            cellUpdateCounter[y][x] = 0;
+ 
+            for (int bin=0; bin<gradientBinSize; bin++)
+                gradientStrengths[y][x][bin] = 0.0;
+        }
+    }
+ 
+    // nr of blocks = nr of cells - 1
+    // since there is a new block on each cell (overlapping blocks!) but the last one
+    int blocks_in_x_dir = cells_in_x_dir - 1;
+    int blocks_in_y_dir = cells_in_y_dir - 1;
+ 
+    // compute gradient strengths per cell
+    int descriptorDataIdx = 0;
+    int cellx = 0;
+    int celly = 0;
+ 
+    for (int blockx=0; blockx<blocks_in_x_dir; blockx++)
+    {
+        for (int blocky=0; blocky<blocks_in_y_dir; blocky++)            
+        {
+            // 4 cells per block ...
+            for (int cellNr=0; cellNr<4; cellNr++)
+            {
+                // compute corresponding cell nr
+                int cellx = blockx;
+                int celly = blocky;
+                if (cellNr==1) celly++;
+                if (cellNr==2) cellx++;
+                if (cellNr==3)
+                {
+                    cellx++;
+                    celly++;
+                }
+ 
+                for (int bin=0; bin<gradientBinSize; bin++)
+                {
+                    float gradientStrength = descriptorValues[ descriptorDataIdx ];
+                    descriptorDataIdx++;
+ 
+                    gradientStrengths[celly][cellx][bin] += gradientStrength;
+ 
+                } // for (all bins)
+ 
+ 
+                // note: overlapping blocks lead to multiple updates of this sum!
+                // we therefore keep track how often a cell was updated,
+                // to compute average gradient strengths
+                cellUpdateCounter[celly][cellx]++;
+ 
+            } // for (all cells)
+ 
+ 
+        } // for (all block x pos)
+    } // for (all block y pos)
+ 
+ 
+    // compute average gradient strengths
+    for (int celly=0; celly<cells_in_y_dir; celly++)
+    {
+        for (int cellx=0; cellx<cells_in_x_dir; cellx++)
+        {
+ 
+            float NrUpdatesForThisCell = (float)cellUpdateCounter[celly][cellx];
+ 
+            // compute average gradient strenghts for each gradient bin direction
+            for (int bin=0; bin<gradientBinSize; bin++)
+            {
+                gradientStrengths[celly][cellx][bin] /= NrUpdatesForThisCell;
+            }
+        }
+    }
+ 
+ 
+    cout << "descriptorDataIdx = " << descriptorDataIdx << endl;
+ 
+    // draw cells
+    for (int celly=0; celly<cells_in_y_dir; celly++)
+    {
+        for (int cellx=0; cellx<cells_in_x_dir; cellx++)
+        {
+            int drawX = cellx * cellSize.width;
+            int drawY = celly * cellSize.height;
+ 
+            int mx = drawX + cellSize.width/2;
+            int my = drawY + cellSize.height/2;
+ 
+            rectangle(visual_image,
+                      Point(drawX*scaleFactor,drawY*scaleFactor),
+                      Point((drawX+cellSize.width)*scaleFactor,
+                      (drawY+cellSize.height)*scaleFactor),
+                      CV_RGB(100,100,100),
+                      1);
+ 
+            // draw in each cell all 9 gradient strengths
+            for (int bin=0; bin<gradientBinSize; bin++)
+            {
+                float currentGradStrength = gradientStrengths[celly][cellx][bin];
+ 
+                // no line to draw?
+                if (currentGradStrength==0)
+                    continue;
+ 
+                float currRad = bin * radRangeForOneBin + radRangeForOneBin/2;
+ 
+                float dirVecX = cos( currRad );
+                float dirVecY = sin( currRad );
+                float maxVecLen = cellSize.width/2;
+                float scale = viz_factor; // just a visual_imagealization scale,
+                                          // to see the lines better
+ 
+                // compute line coordinates
+                float x1 = mx - dirVecX * currentGradStrength * maxVecLen * scale;
+                float y1 = my - dirVecY * currentGradStrength * maxVecLen * scale;
+                float x2 = mx + dirVecX * currentGradStrength * maxVecLen * scale;
+                float y2 = my + dirVecY * currentGradStrength * maxVecLen * scale;
+ 
+                // draw gradient visual_imagealization
+                line(visual_image,
+                     Point(x1*scaleFactor,y1*scaleFactor),
+                     Point(x2*scaleFactor,y2*scaleFactor),
+                     CV_RGB(0,0,255),
+                     1);
+ 
+            } // for (all bins)
+ 
+        } // for (cellx)
+    } // for (celly)
+ 
+ 
+    // don't forget to free memory allocated by helper data structures!
+    for (int y=0; y<cells_in_y_dir; y++)
+    {
+      for (int x=0; x<cells_in_x_dir; x++)
+      {
+           delete[] gradientStrengths[y][x];            
+      }
+      delete[] gradientStrengths[y];
+      delete[] cellUpdateCounter[y];
+    }
+    delete[] gradientStrengths;
+    delete[] cellUpdateCounter;
+ 
+    result =  visual_image;
+	return descriptorsValues;
+ 
+}
+
+
 
 /*
  * Read positive image files (and shuffle)
@@ -119,13 +351,34 @@ void Detector::readNegFilelist(vector<string> &neg_files)
 	const string files_regx = Detector::cfg()->getValue<string>("settings/images/neg/files@regx");
 	FileIO::getDirectory(neg_path, neg_files, files_regx, neg_path);
 	assert(!neg_files.empty());
+
+	//read text file,
+	ifstream file("D:/Github/ComputerVison/Ass4/data/neg/ImageSets/Main/person_test.txt");
+	 if ( !file ) {
+       cout << "File could not be read" << endl;
+   }
+	string ans;
+	vector<String> negBetter;
+	int i=0;
+	while (std::getline(file, ans))
+	{
+		if (ans.substr(7) == "-1")
+		{
+			negBetter.push_back(neg_files[i]);
+		}
+		i++;
+	}
+	neg_files = negBetter;
+	
+
+
 	random_shuffle(neg_files.begin(), neg_files.end());
 }
 
 /*
  * Read positive image data
  */
-void Detector::readPosData(const std::vector<std::string> &pos_train, cv::Mat &pos_data)
+void Detector::readPosData(const std::vector<std::string> &pos_train, cv::Mat &pos_data,vector<vector<float>> &allHOGs)
 {
 	assert(!pos_train.empty());
 
@@ -146,14 +399,19 @@ void Detector::readPosData(const std::vector<std::string> &pos_train, cv::Mat &p
 	int64 t0 = Utility::get_time_curr_tick();
 	Mat pos_sum;
 
+	
 	for (size_t f = 0; f < pos_train.size(); ++f)
 	{
 		string file = pos_train[f];
 		image = imread(file, CV_LOAD_IMAGE_GRAYSCALE);
+		
+		Mat result;
+		allHOGs.push_back( HOGmodel(image,result) );
+		
 		Rect rect = Rect(Point(x1, y1), Point(image.cols - x2, image.rows - y2));
 		assert(rect.area() < image.size().area());
 		Mat features = image(rect);
-		resize(features, features, _model_size);
+		cv::resize(features, features, _model_size);
 
 		if (pos_sum.empty())
 		{
@@ -201,12 +459,13 @@ void Detector::readPosData(const std::vector<std::string> &pos_train, cv::Mat &p
 
 	normalize(pos_sum1dF.reshape(1, height), pos_sum, 255, 0, NORM_MINMAX);
 	pos_sum.convertTo(_pos_sum8U, CV_8U);
+
 }
 
 /*
  * Read negative image data
  */
-void Detector::readNegData(const std::vector<std::string> &neg_train, cv::Mat &neg_data)
+void Detector::readNegData(const std::vector<std::string> &neg_train, cv::Mat &neg_data,std::vector<std::vector<float>> &)
 {
 	assert(!neg_train.empty());
 
@@ -310,9 +569,24 @@ void Detector::readNegData(const std::vector<std::string> &neg_train, cv::Mat &n
  */
 void Detector::createPyramid(const Mat &image, vector<Mat*> &pyramid)
 {
-	pyramid.push_back(new Mat(image));
-}
+	int max_layers = 1 + floor( log( MIN(image.rows, image.cols) / (double) 2 * _target_width) / log(_layer_scale_factor) );	
+	int layer_amount = MAX(max_layers, _layer_scale_interval) + _layer_scale_interval;
+	 // each layer scales the previous by 0.933033
+	double scale = 1/_layer_scale_factor;
+	
+	Mat scaledImg;
+	for (int layer=0;layer<layer_amount;layer++)
+	{
+		
+		resize(image,scaledImg,Size(0,0),pow(scale,layer),pow(scale,layer));
+		if(MIN(scaledImg.rows, scaledImg.cols)<= _target_width) break;
+		cout<<"Layer "<<layer<< " scaled size: "<<scaledImg.size()<<endl;
+		pyramid.push_back(new Mat(scaledImg));
+	}
 
+	cout<<"Pyramid layers: "<<pyramid.size()<<endl;
+	
+}
 void Detector::run()
 {
 	assert(FileIO::isFile(_query_image_file));
@@ -348,8 +622,9 @@ void Detector::run()
 	Mat pos_train_data, neg_train_data;
 	cout << endl << "line:" << __LINE__ << ") Read training images" << endl;
 	cout << "==============================" << endl;
-	readPosData(pos_train, pos_train_data);
-	readNegData(neg_train, neg_train_data);
+	vector<vector<float>> posHOGs,negHOGs;
+	readPosData(pos_train, pos_train_data,posHOGs);
+	readNegData(neg_train, neg_train_data,negHOGs);
 	/////////////////////////////////////////////////////////////////////////////
 
 	/////////////////////////// Whitening transformation ////////////////////////
@@ -378,6 +653,10 @@ void Detector::run()
 		hconcat(pos_tmp_sz_im_canvas, whitened_pos_tmp_sz_im_canvas, pos_tmp_sz_im_canvas);
 	}
 	/////////////////////////////////////////////////////////////////////////////
+	
+	
+
+
 
 	///////////// Build train / val datasets and display stuff  /////////////////
 	Mat train_data;
@@ -393,9 +672,11 @@ void Detector::run()
 
 	cout << endl << "line:" << __LINE__ << ") Read validation images" << endl;
 	cout << "==============================" << endl;
-	Mat pos_val_data, neg_val_data;
-	readPosData(pos_val, pos_val_data);
-	readNegData(neg_val, neg_val_data);
+	Mat pos_val_data, neg_val_data; 
+	vector<vector<float>> posHOGsVal;
+	vector<vector<float>> negHOGsVal;
+	readPosData(pos_val, pos_val_data,posHOGsVal);
+	readNegData(neg_val, neg_val_data,negHOGsVal);
 
 	Mat whitened_pos_val_data, whitened_neg_val_data;
 	if (_do_whitening)
@@ -441,7 +722,9 @@ void Detector::run()
 	double best_c = -DBL_MAX;
 	double best_pct = -DBL_MAX;
 
+
 	MySVM svm;
+		
 	const double C = Detector::cfg()->getValue<double>("settings/svm/params/C");
 	cout << endl << "line:" << __LINE__ << ") C: " << C << endl;
 
@@ -458,10 +741,13 @@ void Detector::run()
 	else
 		data = train_data;
 
+	
+	
+	
 	// Train the SVM
-	cout << "line:" << __LINE__ << ") Training SVM..." << endl;
+	//cout << "line:" << __LINE__ << ") Training SVM..." << endl;
 	svm.train(data, labels, Mat(), Mat(), params);
-
+	
 	Mat labels_train;
 	svm.predict(data, labels_train);
 
@@ -470,11 +756,11 @@ void Detector::run()
 	cv::Mat diff = labels_32F == labels_train;
 	double train_true = countNonZero(diff);
 	double train_pct = (train_true / (double) diff.rows) * 100.0;
-	cout << "\tTraining correct: " << train_pct << "%" << endl;
-
+	//cout << "\tTraining correct: " << train_pct << "%" << endl;
+	
 	const int sv_count = svm.get_support_vector_count();
 	const int sv_length = svm.get_var_count();
-	cout << "\tSupport vector(s): " << sv_count << ", vector-length: " << sv_length << endl;
+	//cout << "\tSupport vector(s): " << sv_count << ", vector-length: " << sv_length << endl;
 
 	CvSVMDecisionFunc* decision = svm.getDecisionFunc();
 	Mat W = Mat::zeros(1, sv_length, CV_64F);
@@ -487,9 +773,10 @@ void Detector::run()
 	}
 
 	const double b = -decision->rho;
-	cout << "line:" << __LINE__ << ") bias: " << b << endl;
+	//cout << "line:" << __LINE__ << ") bias: " << b << endl;
 
-	
+	//cout<<"W : "<<W.size()<<endl;
+	//cout<< "data : "<<data.size()<<endl;
 	 {
 	 // Compute the confidence values for training and validation as the distances
 	 // between the sample vectors X and weight vector W, using bias b:
@@ -501,20 +788,20 @@ void Detector::run()
 	 // The confidence value for training should be the same value you get from
 	 // svm.predict(data, labels_train);
 
-	 Mat conf_train; gemm(train_data,W,1,b,1,conf_train); // new
-	 Mat conf_val; gemm(val_data,W,1,b,1,conf_val);  //new
+	 Mat conf_train = train_data * W.t() + b; //new
+	 Mat conf_val = val_data * W.t() + b ; //new
 	 Mat train_pred = (conf_train > 0) / 255;
-	 Mat train_gnd = Mat(train_pred.size(),float(0)); //new
+	 Mat train_gnd = ((labels_train > 0) / 255) * 2 - 1; //new
 	 Mat val_pred = (conf_val > 0) / 255;
 	 double train_true = train_pred.rows - sum((train_pred == train_gnd) / 255)[0];
 	 double train_pct = (train_true / (double) train_pred.rows) * 100.0;
 	 double val_true = val_pred.rows - sum((val_pred == val_gnd) / 255)[0];
 	 double val_pct = (val_true / (double) val_pred.rows) * 100.0;
-	 cout << "\tTraining correct: " << train_pct << "%" << endl;
+	 //cout << "\tTraining correct: " << train_pct << "%" << endl;
 	 cout << "\tValidation correct: " << val_pct << "%" << endl;
 	 }
 	 
-
+	
 	best_W = W;
 	best_b = b;
 	best_c = C;
@@ -528,7 +815,8 @@ void Detector::run()
 	W_rect.convertTo(W_img, CV_8U);
 	bitwise_not(W_img, nW_img);
 	imshow("Model", nW_img);
-	cout << "Press a key to continue" << endl;
+	//cout << "Press a key to continue" << endl;
+		
 	waitKey();
 	/////////////////////////////////////////////////////////////////////////////
 
@@ -574,6 +862,7 @@ void Detector::run()
 
 	for (size_t layer = 0; layer < pyramid.size(); ++layer)
 	{
+		cout<<pyramid[layer]<<endl;
 		string etf = Utility::show_fancy_etf(layer, pyramid.size(), 1, t0, fps);
 		if (!etf.empty()) cout << etf << endl;
 
@@ -629,7 +918,10 @@ void Detector::run()
 		 *
 		 * Mat detect = ...;
 		 */
-		Mat detect(sub_windows.rows, 1, CV_64F);
+		//cout<< "sub_windows: " << "type: "<<sub_windows.type()<<" size: "<<sub_windows.size()<<endl;
+		//cout<< "w: " << "type: "<<W.type()<<" size: "<<W.size()<<endl;
+		Mat detect = sub_windows * W.t() + b;
+		/*Mat detect(sub_windows.rows, 1, CV_64F);
 		for (int i = 0; i < sub_windows.rows; ++i)
 		{
 			Mat sub1dF;
@@ -639,7 +931,7 @@ void Detector::run()
 				sub_windows.row(i).convertTo(sub1dF, CV_32F);
 
 			detect.at<double>(i, 0) = (double) svm.predict(sub1dF, true);
-		}
+		}*/
 
 		// Show detection results as a heatmap of most likely face locations for this pyramid layer
 		Mat face_locations = Mat(detect.t()).reshape(detect.channels(),
