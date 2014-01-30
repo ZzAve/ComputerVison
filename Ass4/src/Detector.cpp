@@ -9,10 +9,10 @@
 #include <iostream>
 #include <fstream>
 #include <string>
-//#include <opencv2/gpu/gpu.hpp>
 #include "opencv2/imgproc/imgproc.hpp";
 #include "opencv2/objdetect/objdetect.hpp";
 #include "opencv2/highgui/highgui.hpp";
+
 using namespace cv;
 using namespace std;
 using namespace boost;
@@ -82,59 +82,17 @@ Detector::~Detector()
 {
 }
 
-
-vector<float> HOGmodel(Mat &img_raw,Mat &result)
+//HOGDescriptor visual_imagealizer adapted for arbitrary size of feature sets and training images
+Mat get_hogdescriptor_visual_image(Mat& origImg, vector<float>& descriptorValues, Size winSize,
+                                   Size cellSize, int scaleFactor, double viz_factor)
 {
-	Mat img;
-	Mat raw = img_raw.clone();
-	cv::resize(raw, img, Size(64,128) );
-	cv::imshow("test",img);
-	cv::waitKey();
- 
-	HOGDescriptor d;
-	// Size(128,64), //winSize
-	// Size(16,16), //blocksize
-	// Size(8,8), //blockStride,
-	// Size(8,8), //cellSize,
-	// 9, //nbins,
-	// 0, //derivAper,
-	// -1, //winSigma,
-	// 0, //histogramNormType,
-	// 0.2, //L2HysThresh,
-	// 0 //gammal correction,
-	// //nlevels=64
-	//);
- 
-	//void HOGDescriptor::compute(const Mat& img, vector<float>& descriptors,
-	//                             Size winStride, Size padding,
-	//                             const vector<Point>& locations) const
-	vector<float> descriptorsValues;
-	vector<Point> locations;
-		d.compute( img, descriptorsValues, Size(0,0), Size(0,0), locations);
- 
-	cout << "HOG descriptor size is " << d.getDescriptorSize() << endl;
-	cout << "img dimensions: " << img.cols << " width x " << img.rows << "height" << endl;
-	cout << "Found " << descriptorsValues.size() << " descriptor values" << endl;
-	cout << "Nr of locations specified : " << locations.size() << endl;
-
-	//result = get_hogdescriptor_visual_image(img_raw, descriptorsValues,Size(128,64),Size(8,8),1,1.0);
-
-
-// HOGDescriptor visual_imagealizer
-// adapted for arbitrary size of feature sets and training images
-//Mat get_hogdescriptor_visual_image(Mat& origImg,
-//                                   vector<float>& descriptorValues,
-//                                   Size winSize,
-//                                   Size cellSize,                                   
-//                                  int scaleFactor,
-//                                   double viz_factor)
   
-	Mat& origImg = raw;
-	Size winSize = Size(128,64);
-	Size cellSize = Size(8,8);
-	int scaleFactor =1;
-	double viz_factor = 1.0;
-	vector<float>& descriptorValues = descriptorsValues;
+	//Mat& origImg = raw;
+	//Size winSize = Size(128,64);
+	//Size cellSize = Size(8,8);
+	//int scaleFactor =1;
+	//double viz_factor = 1.0;
+	//vector<float>& descriptorValues = descriptorsValues;
 
     Mat visual_image;
     resize(origImg, visual_image, Size(origImg.cols*scaleFactor, origImg.rows*scaleFactor));
@@ -299,9 +257,47 @@ vector<float> HOGmodel(Mat &img_raw,Mat &result)
     delete[] gradientStrengths;
     delete[] cellUpdateCounter;
  
-    result =  visual_image;
-	return descriptorsValues;
+    return visual_image;
+	
+}
+
+vector<float> HOGmodel(Mat &img_raw,Mat &result)
+{
+	Mat img;
+	Mat raw = img_raw.clone();
+	cv::resize(raw, img, Size(64,128) );
+	//cv::imshow("test",img);
+	cv::waitKey();
  
+	HOGDescriptor d;
+	// Size(128,64), //winSize
+	// Size(16,16), //blocksize
+	// Size(8,8), //blockStride,
+	// Size(8,8), //cellSize,
+	// 9, //nbins,
+	// 0, //derivAper,
+	// -1, //winSigma,
+	// 0, //histogramNormType,
+	// 0.2, //L2HysThresh,
+	// 0 //gammal correction,
+	// //nlevels=64
+	//);
+ 
+	//void HOGDescriptor::compute(const Mat& img, vector<float>& descriptors,
+	//                             Size winStride, Size padding,
+	//                             const vector<Point>& locations) const
+	vector<float> descriptorsValues;
+	vector<Point> locations;
+		d.compute( img, descriptorsValues, Size(0,0), Size(0,0), locations);
+ 
+	cout << "HOG descriptor size is " << d.getDescriptorSize() << endl;
+	cout << "img dimensions: " << img.cols << " width x " << img.rows << "height" << endl;
+	cout << "Found " << descriptorsValues.size() << " descriptor values" << endl;
+	cout << "Nr of locations specified : " << locations.size() << endl;
+
+	result = get_hogdescriptor_visual_image(img, descriptorsValues,Size(128,64),Size(8,8),1,1.0);
+	waitKey(5);
+	return descriptorsValues;
 }
 
 
@@ -465,7 +461,7 @@ void Detector::readPosData(const std::vector<std::string> &pos_train, cv::Mat &p
 /*
  * Read negative image data
  */
-void Detector::readNegData(const std::vector<std::string> &neg_train, cv::Mat &neg_data,std::vector<std::vector<float>> &)
+void Detector::readNegData(const std::vector<std::string> &neg_train, cv::Mat &neg_data,std::vector<std::vector<float>> &allHOGs)
 {
 	assert(!neg_train.empty());
 
@@ -483,6 +479,9 @@ void Detector::readNegData(const std::vector<std::string> &neg_train, cv::Mat &n
 	{
 		string file = neg_train[f];
 		Mat image = imread(file, CV_LOAD_IMAGE_GRAYSCALE);
+
+		Mat result;
+		allHOGs.push_back( HOGmodel(image,result) );
 
 		for (int i = 0; i < fpnt; ++i)
 		{
@@ -622,9 +621,9 @@ void Detector::run()
 	Mat pos_train_data, neg_train_data;
 	cout << endl << "line:" << __LINE__ << ") Read training images" << endl;
 	cout << "==============================" << endl;
-	vector<vector<float>> posHOGs,negHOGs;
-	readPosData(pos_train, pos_train_data,posHOGs);
-	readNegData(neg_train, neg_train_data,negHOGs);
+	vector<vector<float>> posHOGsTrain,negHOGsTrain;
+	readPosData(pos_train, pos_train_data,posHOGsTrain);
+	readNegData(neg_train, neg_train_data,negHOGsTrain);
 	/////////////////////////////////////////////////////////////////////////////
 
 	/////////////////////////// Whitening transformation ////////////////////////
@@ -677,7 +676,8 @@ void Detector::run()
 	vector<vector<float>> negHOGsVal;
 	readPosData(pos_val, pos_val_data,posHOGsVal);
 	readNegData(neg_val, neg_val_data,negHOGsVal);
-
+	cout<<"pos_val_data: "<<pos_val_data.size()<<endl;
+	cout<<"posHOGsVal: "<<posHOGsVal.size()<<endl;
 	Mat whitened_pos_val_data, whitened_neg_val_data;
 	if (_do_whitening)
 	{
@@ -712,6 +712,64 @@ void Detector::run()
 	double alt_true = alt_pred.size().height - sum((alt_pred == val_gnd) / 255)[0];
 	double alt_pct = (alt_true / (double) alt_pred.size().height) * 100.0;
 	cout << "Validation correct with mean model: " << alt_pct << "%" << endl;
+
+
+	//////////////////////////////////////////////////////////////////////////////
+	//////////////////////////// Create MATs for SVM /////////////////////////////
+	Mat posHt= Mat(posHOGsTrain.size(),posHOGsTrain[0].size(),CV_64FC1);
+	posHt = float(0);
+	cout<<"posHt size: "<<posHt.size()<<endl;
+	Mat negHt= Mat(negHOGsTrain.size(),negHOGsTrain[0].size(),CV_64FC1);
+	negHt = float(0);
+	cout<<"negHt size: "<<negHt.size()<<endl;
+	Mat posVt= Mat(posHOGsVal.size()  ,posHOGsVal[0].size()  ,CV_64FC1);
+	posVt = float(0);
+	cout<<"posVt size: "<<posHt.size()<<endl;
+	Mat negVt= Mat(negHOGsVal.size()  ,negHOGsVal[0].size()  ,CV_64FC1);
+	negVt = float(0);
+	cout<<"negVt size: "<<negVt.size()<<endl;
+
+	for (size_t i=0;i<posHt.rows;i++)
+	{
+		for (size_t j=0;j<posHt.cols;j++)
+		{
+			//cout<<"posHOGsTrain[i][j] at entry "<<i<<","<<j<<": "<<posHOGsTrain[i][j]<<endl;
+			//cout<<"At position: "<<posHt.at<double>(i,j)<<endl;
+			posHt.at<double>(i,j) = posHOGsTrain[i][j];
+			posVt.at<double>(i,j) = posHOGsVal[i][j];
+
+		}
+	}
+	for (size_t i=0;i<negHt.rows;i++)
+	{
+		for (size_t j=0;j<negHt.cols;j++)
+		{
+			//cout<<"posHOGsTrain[i][j] at entry "<<i<<","<<j<<": "<<posHOGsTrain[i][j]<<endl;
+			//cout<<"At position: "<<posHt.at<double>(i,j)<<endl;
+			negHt.at<double>(i,j) = negHOGsTrain[i][j];
+			negVt.at<double>(i,j) = negHOGsVal[i][j];
+
+		}
+	}
+
+	Mat train_HOG;
+	train_HOG.push_back(posHt);
+	train_HOG.push_back(negHt);
+	
+	Mat val_HOG;
+	val_HOG.push_back(posVt);
+	val_HOG.push_back(negVt);
+
+	pos_labels = Mat(posHt.rows, 1, CV_32S, Scalar::all(1));
+	neg_labels = Mat(negHt.rows, 1, CV_32S, Scalar::all(-1));
+
+	labels = Mat();
+	labels.push_back(pos_labels);
+	labels.push_back(neg_labels);
+	
+	val_labels = Mat(posVt.rows, 1, CV_32S, Scalar::all(1));
+	val_labels.push_back(Mat(negVt.rows, 1, CV_32S, Scalar::all(-1)));
+	val_gnd = ((val_labels > 0) / 255) * 2 - 1;
 	/////////////////////////////////////////////////////////////////////////////
 
 	/////////////////////////////// Train SVM ///////////////////////////////////
@@ -735,15 +793,60 @@ void Detector::run()
 	params.kernel_type = SVM::LINEAR;
 	params.term_crit = TermCriteria(CV_TERMCRIT_ITER, _max_count, _epsilon);
 
+
+	/*
+	// OLD
 	Mat data;
 	if (train_data.type() != CV_32F)
 		train_data.convertTo(data, CV_32F);
 	else
 		data = train_data;
 
+	// Train the SVM
+	//cout << "line:" << __LINE__ << ") Training SVM..." << endl;
+	svm.train(data, labels, Mat(), Mat(), params);
 	
+	Mat labels_train;
+	svm.predict(data, labels_train);
+
+	Mat labels_32F;
+	labels.convertTo(labels_32F, CV_32F);
+	cv::Mat diff = labels_32F == labels_train;
+	double train_true = countNonZero(diff);
+	double train_pct = (train_true / (double) diff.rows) * 100.0;
+	//cout << "\tTraining correct: " << train_pct << "%" << endl;
 	
-	
+	const int sv_count = svm.get_support_vector_count();
+	const int sv_length = svm.get_var_count();
+	//cout << "\tSupport vector(s): " << sv_count << ", vector-length: " << sv_length << endl;
+
+	CvSVMDecisionFunc* decision = svm.getDecisionFunc();
+	Mat W = Mat::zeros(1, sv_length, CV_64F);
+	for (int i = 0; i < sv_count; ++i)
+	{
+		// Compute W from support_vector and decision->alpha
+		const float* support_vector = svm.get_support_vector(i);
+		for (int j = 0; j < sv_length; ++j)
+			W.at<double>(0, j) += decision->alpha[i] * support_vector[j];
+	}
+
+	const double b = -decision->rho;
+	*/
+
+	// NEW
+	Mat data;
+	if (train_HOG.type() != CV_32F)
+		train_HOG.convertTo(data, CV_32F);
+	else
+		data = train_HOG;
+
+	val_data =Mat();
+	if (val_HOG.type() != CV_32F)
+		val_HOG.convertTo(val_data, CV_32F);
+	else
+		val_data = val_HOG;
+
+	//Mat val_data;
 	// Train the SVM
 	//cout << "line:" << __LINE__ << ") Training SVM..." << endl;
 	svm.train(data, labels, Mat(), Mat(), params);
@@ -788,7 +891,10 @@ void Detector::run()
 	 // The confidence value for training should be the same value you get from
 	 // svm.predict(data, labels_train);
 
-	 Mat conf_train = train_data * W.t() + b; //new
+	 cout<<val_data.type() << " vs " << W.type();
+	 data.convertTo(data,CV_64F);
+	 val_data.convertTo(val_data,CV_64F);
+	 Mat conf_train = data * W.t() + b; //new
 	 Mat conf_val = val_data * W.t() + b ; //new
 	 Mat train_pred = (conf_train > 0) / 255;
 	 Mat train_gnd = ((labels_train > 0) / 255) * 2 - 1; //new
@@ -797,29 +903,44 @@ void Detector::run()
 	 double train_pct = (train_true / (double) train_pred.rows) * 100.0;
 	 double val_true = val_pred.rows - sum((val_pred == val_gnd) / 255)[0];
 	 double val_pct = (val_true / (double) val_pred.rows) * 100.0;
-	 //cout << "\tTraining correct: " << train_pct << "%" << endl;
+	 cout << "\tTraining correct: " << train_pct << "%" << endl;
 	 cout << "\tValidation correct: " << val_pct << "%" << endl;
 	 }
 	 
-	
+	 // get W to vector again
+	 vector<float> wVec;
+	 for (size_t i=0;i<W.cols;i++)
+	 {
+		 wVec.push_back(W.at<double>(0,i));
+	 }
+
+	 // show model
+	 Mat temp = Mat(Size(64,128),CV_64F);
+	 temp = float(0);
+
+	 Mat result = get_hogdescriptor_visual_image(temp,wVec,Size(64,128),Size(8,8),4,1.0);
+	 namedWindow("Results HOG",CV_WINDOW_NORMAL);
+	 imshow("Resulting HOG",result);
+	 cout<<"Check the results.."<<endl;
+	 waitKey();
 	best_W = W;
 	best_b = b;
 	best_c = C;
 
 	Mat W_rect(height, width, CV_64F);
 	W_rect.data = best_W.data;
-	assert((int ) best_W.total() == width * height);
+	//assert((int ) best_W.total() == width * height);
 
 	normalize(W_rect, W_rect, 255, 0, NORM_MINMAX);
 	Mat W_img, nW_img;
 	W_rect.convertTo(W_img, CV_8U);
 	bitwise_not(W_img, nW_img);
 	imshow("Model", nW_img);
-	//cout << "Press a key to continue" << endl;
+	cout << "Press a key to continue" << endl;
 		
 	waitKey();
 	/////////////////////////////////////////////////////////////////////////////
-
+	//  FROM THIS POINT IT DOES NOT WORK ANYMORE ! ! ! ! //
 	////////////////////////////// Test on real image ///////////////////////////
 	cout << "Detecting faces..." << endl;
 
