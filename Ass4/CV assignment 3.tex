@@ -71,11 +71,32 @@
 %----------------------------------------------------------------------------------------
 %	PROBLEM 1
 %----------------------------------------------------------------------------------------
-\section{Explain what is linear about the linear Support Vector Machine.}
+\section*{4.a.i. Explain what is linear about the linear Support Vector Machine.}
 The linear support vector machine uses a linear equation to divide the items in two classes. This can be in more than 2 dimensions. See the example below.
 
 y = ax +b
 z = ax +by + c
 ...
-\section{What is the initial validation score of the model?}
+\section*{4.b.iii. What is the initial validation score of the model?}
+The validation score of the initial model is 96.4844\%
+\section*{4.c.i. What does this parameter do?}
+C is the penalty factor. This is a penalty for non-seperateble points. Choosing the right C-value prevents over or underfitting.
+\section*{4.c.ii. Find the optimal C-value by trying different settings and different amounts of learning data.}
+We found that the following settings gives the best validation score:\\
+Positive images: 200\\
+Factor: 1\\
+C: 0.001 - 0.1\\
+Validation score:97.25\% \\
+\section*{4.c.ii. What, in terms of the theory of SVM, does the model consist of? Why does that look like a face?}
+The model consists of a 2d vector, dividing the data in two classes, a face or not a face. This conceptually means that if it looks more like a "face" than the model, it gets labelled "face", if its less, "not a face". That is also the reason why it looks like a face.
+\section*{4.c.iv. What do these switches do with the learning data? Why is this good for the performance?}
+Whitening decorrelates the data. Usually there is bias in the color of the images. Whitening removes bias and correlation, and makes the faces look more alike.\\
+Equalizing \\
+While testing different settings, we found that whitening didnt have a positive effect on the score. Equalizing also didn't improve the score, but we found that it gave better results. When equalizing is turned on, a C-value of 0.006 gives a score of 95\% \\
+\section*{5.c Report the impact on the performance of the real images.}
+\section*{6.d Report the impact on the performance of the validation data.}
+\section*{6.e Report the impact on the performance of the real images.}
+\section*{6.f You get bonus points if you implement another image descriptor and report its performance.}
+\section*{7.b Put the Precision/Recall curve of your best performing model for img1.jpg in your report (or add an image of the graph to your archive).}
+\section*{7.c Calculate the AP of your best model for img1.jpg.}
 \end{document}
